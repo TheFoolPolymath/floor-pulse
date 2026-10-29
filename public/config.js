@@ -1,11 +1,11 @@
-// Floor Pulse settings. This is the only file you edit to connect the app to your Google Sheet.
+// Floor Pulse settings.
 window.FP_CONFIG = {
-  // LIVE MODE: fill BOTH lines below, then redeploy. People sign in with their Google account.
-  API_URL: '',            // the Apps Script web app URL, ends in /exec
-  GOOGLE_CLIENT_ID: '',   // from Google Cloud Console, ends in .apps.googleusercontent.com (same one as in Code.gs)
+  // LIVE MODE: the server and the website are on the same address, so use /api
+  API_URL: '/api',
 
-  // While API_URL is empty the app runs in DEMO MODE with made-up data and no sign-in.
+  // OAuth client ID (Web application) from Google Cloud. It is public, so it is safe in this file.
+  GOOGLE_CLIENT_ID: '941223529262-j3h5vahvf61obucjc14ajko0449gm062.apps.googleusercontent.com',
 
-  BRANCH: 'Mumbai Branch',   // shown under the app name in demo mode
-  REFRESH_MIN: 5             // how often live mode re-reads the sheet
+  BRANCH: 'Vashi Branch',   // shown in the header
+  REFRESH_MIN: 5             // how often the app refreshes
 };
