@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Floor Pulse · TV</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="tv.css">
+</head>
+<body>
+<main class="stage" id="stage" aria-live="polite"></main>
+
+<footer class="ft">
+  <span class="clk" id="clk">--:--</span>
+  <span class="brand muted" id="brand"></span>
+  <span class="tag" id="demoTag" hidden>Demo data · made-up numbers</span>
+  <span class="lbl" id="lbl"></span>
+  <div class="prog" aria-hidden="true"><i id="prog"></i></div>
+  <span class="pos" id="pos"></span>
+  <button class="btn" id="prev" type="button" aria-label="Previous slide">Prev</button>
+  <button class="btn" id="pause" type="button" aria-label="Pause or play">Pause</button>
+  <button class="btn" id="next" type="button" aria-label="Next slide">Next</button>
+  <button class="btn fsbtn" id="fs" type="button">Full screen</button>
+</footer>
+<div class="msg" id="msg" role="status"></div>
+
+<script src="config.js"></script>
+<script src="tv-slides.js"></script>
+<script src="tv.js"></script>
+</body></html>

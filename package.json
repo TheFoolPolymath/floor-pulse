@@ -1,0 +1,24 @@
+{
+  "name": "floor-pulse",
+  "version": "2.0.0",
+  "description": "Floor Pulse: telecalling floor dashboard for admins and team leaders",
+  "private": true,
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "db:migrate": "node scripts/migrate.js",
+    "setup:sheets": "node scripts/setup-sheets.js",
+    "migrate:sheets": "node scripts/migrate-from-sheets.js",
+    "check": "node scripts/check.js",
+    "test": "node --test test/unit.test.js test/api.test.js test/sync.test.js test/migrate.test.js",
+    "tv:preview": "node tools/tv-preview.js",
+    "test:ui": "node tools/test-demo-ui.js && node tools/test-phone-ui.js",
+    "tv:data": "node tools/make-tv-mock.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.11.0"
+  }
+}

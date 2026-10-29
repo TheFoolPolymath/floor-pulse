@@ -1,0 +1,8 @@
+/sw.js
+  Cache-Control: no-cache
+/config.js
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+/data/*
+  Cache-Control: no-store

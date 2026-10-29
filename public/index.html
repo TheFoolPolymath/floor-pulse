@@ -1,0 +1,1718 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Floor Pulse</title>
+<meta name="theme-color" content="#0D1217">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+/* Layout: sticky control bar + tab strip, then a stack of cards that open into 2-4 columns on wide screens.
+   Palette: cool slate neutrals, amber accent for live/active state, five team hues, green/red reserved for up/down. */
+:root{
+  --bg:#F1F3F5;--surface:#FFFFFF;--surface2:#F5F7F9;--line:#DCE2E8;--fg:#13202C;--muted:#5C6B79;
+  --accent:#A86300;--accent-bg:#FFF0D2;--up:#17814A;--down:#C4382F;
+  --c1:#2F6FD6;--c2:#B87408;--c3:#7E55CC;--c4:#CC3F7C;--c5:#0F8F8D;
+  --font:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D1217;--surface:#141B22;--surface2:#1A232C;--line:#27323D;--fg:#E7ECF1;--muted:#8D9BA9;
+  --accent:#F2B13A;--accent-bg:#3A2D12;--up:#3FC17C;--down:#EE6B61;
+  --c1:#5C9CF5;--c2:#EDAA3E;--c3:#A98BF0;--c4:#F07BA8;--c5:#38C7C3;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D1217;--surface:#141B22;--surface2:#1A232C;--line:#27323D;--fg:#E7ECF1;--muted:#8D9BA9;
+  --accent:#F2B13A;--accent-bg:#3A2D12;--up:#3FC17C;--down:#EE6B61;
+  --c1:#5C9CF5;--c2:#EDAA3E;--c3:#A98BF0;--c4:#F07BA8;--c5:#38C7C3;color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:14px/1.45 var(--font);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1240px;margin:0 auto}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-top:12px;border-bottom:1px solid var(--line)}
+.bar1{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand b{font-size:18px;font-weight:800;letter-spacing:-.01em}
+.brand small{display:block;color:var(--muted);font-size:12px}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;color:var(--muted);padding:6px 11px;font:600 12px var(--font);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent-bg);color:var(--accent)}
+select,input{font:500 13px var(--font);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px 9px;min-width:0}
+input:disabled,select:disabled{opacity:.5}
+button{font-family:var(--font)}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:6px 11px;font:600 12px var(--font);cursor:pointer}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.btn.dng{color:var(--down);border-color:var(--down)}
+.btn:disabled{opacity:.5;cursor:default}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.live{display:inline-flex;align-items:center;gap:7px;font:500 12px var(--mono);color:var(--muted)}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--up);animation:pl 1.6s infinite}
+.live.off i{background:var(--muted);animation:none}
+@keyframes pl{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.live i{animation:none}}
+.tabs{display:flex;gap:2px;overflow-x:auto;margin-top:10px;scrollbar-width:none}
+.tabs button{border:0;background:transparent;color:var(--muted);padding:9px 13px;font:600 13px var(--font);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+main{padding-top:16px;display:grid;gap:12px}
+h2{font-size:20px;font-weight:800;margin:0;letter-spacing:-.01em}
+h3{font-size:12px;font-weight:700;margin:0 0 10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.head p{margin:2px 0 0;color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr))}
+.kpi .v{font:700 28px/1.1 var(--mono);font-variant-numeric:tabular-nums;margin:2px 0 6px}
+.kpi .s{color:var(--muted);font-size:12px}
+.kpi.sm .v{font-size:20px}
+.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.bar{height:8px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:var(--accent)}
+.bar>.mk{position:absolute;top:0;bottom:0;width:2px;background:var(--fg);opacity:.7}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font:700 11px var(--font);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th.s{cursor:pointer}th.s:hover{color:var(--fg)}
+td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+tr.clk{cursor:pointer}tr.clk:hover td{background:var(--surface2)}
+tr.sel td{background:var(--accent-bg)}
+tr.tot td{font-weight:700;border-top:2px solid var(--line);background:var(--surface2)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font:600 11px var(--font);background:var(--surface2);border:1px solid var(--line)}
+.pill.p{color:var(--up);border-color:var(--up)}.pill.a{color:var(--down);border-color:var(--down)}.pill.l{color:var(--accent);border-color:var(--accent)}
+.dl{font:600 12px var(--mono)}.up{color:var(--up)}.dn{color:var(--down)}
+.spark{vertical-align:middle}
+.rrow{display:grid;grid-template-columns:22px minmax(90px,150px) 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.rrow:last-child{border-bottom:0}
+.rrow .meta{font-size:12px;color:var(--muted)}
+.rrow.off{opacity:.45}
+.feed{display:grid;gap:0;max-height:300px;overflow-y:auto}
+.feed div{padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;display:flex;gap:10px}
+.feed time{font:500 12px var(--mono);color:var(--muted);flex:none}
+.dots{display:flex;flex-wrap:wrap;gap:4px;margin:8px 0}
+.dots i{width:14px;height:14px;border-radius:3px;border:1px solid var(--line);background:var(--surface2)}
+.dots i.on{background:var(--up);border-color:var(--up)}.dots i.lv{background:var(--accent);border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:4px 9px;border-radius:6px;font:600 12px var(--font);border:1px solid var(--line);background:var(--surface2)}
+.chip.p{border-color:var(--up);color:var(--up)}.chip.a{border-color:var(--down);color:var(--down)}.chip.l{border-color:var(--accent);color:var(--accent)}
+.heat{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;max-width:420px}
+.heat i{aspect-ratio:1;border-radius:3px;background:var(--surface2);border:1px solid var(--line)}
+.heat i.p{background:var(--up);border-color:var(--up)}.heat i.a{background:var(--down);border-color:var(--down)}.heat i.l{background:var(--accent);border-color:var(--accent)}
+.cmp{display:grid;gap:8px}
+.cmp .row{display:grid;grid-template-columns:minmax(110px,160px) 1fr 90px;gap:10px;align-items:center;font-size:13px}
+svg text{font-family:var(--mono);font-size:10.5px;fill:var(--muted)}
+svg .tag{font-weight:700}
+.note{font-size:12px;color:var(--muted);margin:0}
+.form{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.form label{display:grid;gap:3px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.msg{color:var(--accent);font-weight:600;font-size:13px;margin:8px 0 0}
+.lock{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--muted)}
+.login{max-width:420px;margin:8vh auto 0;text-align:center;display:grid;gap:12px;justify-items:center}
+.login p{margin:0}
+#gbtn{min-height:44px}
+/* hover tips: anything with data-tip explains itself */
+[data-tip]{cursor:help}
+th[data-tip],h3[data-tip]{text-decoration:underline dotted var(--muted);text-underline-offset:4px}
+tr.clk [data-tip],.btn[data-tip],select[data-tip],input[data-tip]{cursor:pointer}
+#tip{position:fixed;z-index:50;max-width:min(320px,calc(100vw - 16px));background:var(--fg);color:var(--bg);padding:8px 10px;border-radius:8px;font:500 12px/1.4 var(--font);pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.28);text-transform:none;letter-spacing:0;white-space:normal}
+/* help page */
+.help h3{margin-top:4px}
+.help p,.help li{margin:0 0 6px;max-width:80ch}
+.help ul,.help ol{margin:0 0 10px;padding-left:20px}
+.help dl{display:grid;grid-template-columns:minmax(120px,190px) 1fr;gap:8px 14px;margin:0}
+.help dt{font-weight:700}.help dd{margin:0;max-width:75ch}
+@media (max-width:640px){.help dl{grid-template-columns:1fr}.help dd{margin-bottom:6px}}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid var(--line);vertical-align:-1px;margin-right:4px}
+@media (max-width:560px){.rrow{grid-template-columns:20px 1fr auto}.rrow .bar{grid-column:1/-1}.kpi .v{font-size:24px}}
+textarea{font:500 13px var(--font)}
+.grp td{background:var(--surface2);font-weight:700;font-size:12px;color:var(--muted)}
+.fgrid,.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px 14px}
+.fgrid label{display:grid;gap:3px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.fgrid label.wide{grid-column:1/-1}.fgrid input,.fgrid select{width:100%}
+.kv div{display:grid;gap:1px;align-content:start}.kv small{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700}.kv span{word-break:break-word}
+.warn{border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);border-radius:8px;padding:8px 10px;font-size:12px;font-weight:600;margin-top:10px}
+.stuck{color:var(--down);font-weight:700}
+.pace{position:relative;min-width:90px}.pace s{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--fg);pointer-events:none}
+.dn{color:var(--down)}.up{color:var(--up)}
+/* ===== v4 shell: sidebar navigation, header, phone layout ===== */
+body{padding:0!important;background:var(--bg)}
+body::before{display:none}
+body.nolog .side{display:none}
+body.nolog .top{display:none}
+body.nolog .main{margin-left:0!important}
+.app{min-height:100vh}
+.side{position:fixed;top:0;bottom:0;left:0;width:248px;z-index:30;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.side-head{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 14px;border-bottom:1px solid var(--line);min-height:64px}
+.brand-t{flex:1;min-width:0}
+.brand-t b{display:block;font-size:16px;font-weight:800}
+.brand-t small{display:block;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#nav{overflow-y:auto;flex:1;padding:4px 8px 16px}
+.ng{margin-bottom:4px}
+.ng-h{width:100%;display:flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--muted);font:700 11px var(--font);text-transform:uppercase;letter-spacing:.08em;padding:12px 8px 6px;cursor:pointer;text-align:left;min-height:40px}
+.ng-h:hover{color:var(--fg)}
+.ng-h .chev{margin-left:auto;font-size:13px}
+.ng-items{display:grid;gap:2px}
+.nv{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;color:var(--fg);font:600 14px var(--font);padding:9px 10px 9px 12px;border-radius:8px;cursor:pointer;text-align:left;min-height:40px;border-left:3px solid transparent}
+.nv:hover{background:var(--surface2)}
+.nv.on{background:var(--accent-bg);color:var(--accent);border-left-color:var(--accent)}
+.ic{flex:none;display:inline-grid;place-items:center;width:32px;height:32px;border-radius:9px;background:var(--surface2);border:1px solid var(--line);color:var(--muted)}
+.ic svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.nv.on .ic{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.ibtn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;min-width:36px;height:36px;padding:0 8px;cursor:pointer;font:700 16px var(--font);flex:none}
+.menu{display:none}
+.scrim{display:none}
+.main{min-width:0;margin-left:248px;padding:0 24px 48px}
+.top{position:sticky;top:0;z-index:20;background:var(--bg);display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 24px;margin:0 -24px;border-bottom:1px solid var(--line)}
+.top .ttl{flex:1 1 200px;min-width:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.top h1{margin:0;font-size:18px;font-weight:800;letter-spacing:-.01em}
+#bar1{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#view{max-width:1240px}
+.sum{border-left:5px solid var(--line)}
+.sum.t-good{border-left-color:var(--up)}.sum.t-warn{border-left-color:var(--accent)}.sum.t-bad{border-left-color:var(--down)}
+.sum-top{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start}
+.sum-verdict{font:800 22px var(--font)}
+.sum-big{text-align:right}
+.sum-big span{font:700 40px/1 var(--mono)}
+.sum-big small{display:block;color:var(--muted);font-size:12px}
+.sum-l{margin:12px 0 0;padding-left:18px;display:grid;gap:6px;font-size:15px}
+@media (min-width:720px){
+ .app.rail .side{width:72px}
+ .app.rail .main{margin-left:72px}
+ .app.rail .side-head{flex-direction:column;justify-content:center;gap:8px;padding:10px 0}
+ .app.rail .brand-t,.app.rail .lbl,.app.rail .ng-h{display:none}
+ .app.rail .ng-items{display:grid!important;justify-items:center}
+ .app.rail .ng{margin-bottom:4px;border-top:1px solid var(--line);padding-top:4px}
+ .app.rail .nv{width:auto;justify-content:center;padding:9px 6px;border-left-width:0}
+ .app.rail .nv.on{border-left-width:0}
+}
+@media (max-width:719px){
+ body{font-size:15px}
+ .side{width:280px;transform:translateX(-105%);transition:transform .2s ease}
+ .app.drawer .side{transform:none;box-shadow:0 0 40px rgba(0,0,0,.35)}
+ .app.drawer .scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:25}
+ #sideToggle{display:none}
+ .menu{display:inline-flex;align-items:center;justify-content:center;min-width:44px;height:44px}
+ .main{margin-left:0;padding:0 16px 40px}
+ .top{margin:0 -16px;padding:10px 16px;gap:8px}
+ .top h1{font-size:17px}
+ #bar1{gap:6px}
+ #bar1 .who{display:none}
+ #bar1{display:grid;grid-template-columns:1fr 1fr;width:100%;order:3}
+ #bar1 .seg{grid-column:1/-1;display:flex}
+ #bar1 .seg button{flex:1}
+ #bar1 select{grid-column:1/-1;width:100%}
+ #bar1 .btn{width:100%}
+ .top{position:static;row-gap:8px}
+ .top .live{font-size:11px}
+ .btn,.ibtn,.nv{min-height:44px}
+ .btn{padding:8px 12px;font-size:14px}
+ .seg button{min-height:40px;padding:8px 12px;font-size:13px}
+ input,select,textarea{max-width:100%;font-size:16px}
+ .card{padding:14px}
+ h2{font-size:20px}
+ h3{font-size:13px}
+ .kpi .v{font-size:26px}
+ .m-hide{display:none!important}
+ svg text{font-size:15px}
+ table.rt{font-size:15px}
+ table.rt thead{display:none}
+ table.rt,table.rt tbody{display:block;width:100%}
+ table.rt tr{display:block;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:4px 14px;margin:0 0 12px}
+ table.rt tr.grp,table.rt tr.tot{background:var(--surface2)}
+ table.rt td{display:grid;grid-template-columns:minmax(0,42%) minmax(0,1fr);gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);white-space:normal;text-align:left;min-width:0}
+ table.rt td:last-child{border-bottom:0}
+ table.rt td.r{text-align:right}
+ table.rt td::before{content:attr(data-l);font:700 11px var(--font);text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+ table.rt td.nl{display:block;padding:10px 0 8px;font-size:16px}
+ table.rt td.nl::before{content:none}
+ table.rt td:empty{display:none}
+ table.rt td input,table.rt td select{width:100%}
+ table.rt td .bar{margin-top:4px}
+}
+/* ===== v5 polish: modern desktop look, lean phone layout (these rules come last and win) ===== */
+:root{--shadow:0 1px 2px rgba(16,24,40,.05),0 1px 1px rgba(16,24,40,.03);--shadow-pop:0 10px 28px rgba(16,24,40,.12)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--shadow:0 1px 2px rgba(0,0,0,.4);--shadow-pop:0 10px 28px rgba(0,0,0,.5)}}
+:root[data-theme="dark"]{--shadow:0 1px 2px rgba(0,0,0,.4);--shadow-pop:0 10px 28px rgba(0,0,0,.5)}
+button,select,input{transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
+.card{border-radius:12px;box-shadow:var(--shadow)}
+main{gap:14px}
+h2{font-size:21px;letter-spacing:-.02em}
+.head p{font-size:13.5px;max-width:72ch}
+th{background:var(--surface);padding:9px 12px}
+td{padding:10px 12px}
+tbody tr:hover td{background:var(--surface2)}
+tr.sel td,tr.clk:hover td{background:var(--accent-bg)}
+tr.tot td{background:var(--surface2)}
+.tw{border-radius:10px}
+.kpi .v{font-size:30px}
+.pill{border-radius:999px;padding:2px 9px}
+.seg{background:var(--surface2);padding:3px;border-radius:10px;border-color:var(--line)}
+.seg button{border-radius:7px;padding:6px 12px;color:var(--muted)}
+.seg button:hover{color:var(--fg)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--accent);box-shadow:0 1px 2px rgba(16,24,40,.12)}
+.btn{border-radius:9px;box-shadow:var(--shadow)}
+.btn:hover:not(:disabled){background:var(--surface2)}
+.btn.pri{box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.btn.pri:hover:not(:disabled){background:var(--accent);filter:brightness(1.07)}
+select,input{border-radius:9px}
+.top{background:color-mix(in srgb,var(--bg) 90%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.top h1{font-size:19px}
+.side{box-shadow:var(--shadow)}
+.brand-t b{font-size:15px}
+.ng-h{font-size:10.5px;letter-spacing:.1em;padding:14px 10px 6px}
+.nv{border-left:0;border-radius:10px;font-size:14px;font-weight:600;padding:9px 10px;margin:0}
+.nv:hover{background:var(--surface2)}
+.nv.on{background:var(--accent-bg);color:var(--accent)}
+.nv.on .ic{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.side-foot{display:none}
+.side-note{margin:0;font:500 12px var(--mono);color:var(--muted)}
+
+@media (max-width:719px){
+  body{font-size:14px}
+  .app{overflow-x:clip}
+  #bar1,#stamp{display:none!important}
+  /* drawer: hidden from touch and screen readers when closed */
+  .side{width:272px;visibility:hidden;transition:transform .22s ease,visibility .22s;box-shadow:none}
+  .app.drawer .side{visibility:visible}
+  .side-head{min-height:56px;padding:10px 12px}
+  .side-foot{display:grid;gap:8px;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);background:var(--surface)}
+  .side-foot .btn,.side-foot select{width:100%;min-height:40px}
+  .side-foot .seg{display:flex;width:100%}
+  .side-foot .seg button{flex:1;min-height:36px}
+  .side-foot .who{justify-self:start}
+  .nv{min-height:44px;font-size:14px;padding:8px 10px}
+  .ng-h{min-height:36px;padding:10px 8px 4px}
+  /* header: one slim sticky row */
+  .top{position:sticky;top:0;margin:0 -12px;padding:8px 12px;min-height:54px;gap:8px;flex-wrap:nowrap;align-items:center;background:var(--bg);border-bottom:1px solid var(--line);z-index:20}
+  .top .ttl{flex:1 1 auto;min-width:0;flex-wrap:nowrap;gap:0}
+  .top h1{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .menu{min-width:40px;height:40px;border-radius:9px;font-size:18px}
+  .main{padding:0 12px 32px}
+  main{padding-top:12px;gap:10px}
+  /* page intro: short, and the big duplicate title is dropped (the header already shows it) */
+  .head{gap:6px 10px}
+  #view>.head>div>h2{display:none}
+  .head p{font-size:13px;margin:0;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .head .seg{display:flex;width:100%}
+  .head .seg button{flex:1;padding:7px 2px;font-size:12px}
+  .card{padding:12px;border-radius:12px}
+  h2{font-size:18px}
+  h3{font-size:11px;margin-bottom:8px}
+  .kpi .v{font-size:22px}
+  .sum-verdict{font-size:18px}
+  .sum-big span{font-size:30px}
+  .sum-l{font-size:14px;gap:4px;margin-top:8px;padding-left:16px}
+  .btn{min-height:40px;padding:8px 12px;font-size:13px}
+  .seg button{min-height:36px}
+  /* tables become compact cards */
+  table.rt{font-size:14px}
+  table.rt tr{border-radius:10px;padding:2px 12px;margin:0 0 8px}
+  table.rt td{padding:6px 0;gap:8px;grid-template-columns:minmax(0,40%) minmax(0,1fr)}
+  table.rt td.nl{font-size:15px;padding:8px 0 6px}
+  table.rt td::before{font-size:10px}
+  table.rt td>.pill{justify-self:end}
+  .tw{margin:0 -2px}
+  .m-hide{display:none!important}
+}
+/* ===== v6 motion: subtle, quick, and off for anyone who asks for reduced motion ===== */
+.side,.main{transition:width .28s cubic-bezier(.2,.7,.2,1),margin-left .28s cubic-bezier(.2,.7,.2,1)}
+.nv{transition:background-color .2s ease,color .2s ease,transform .15s ease}
+.nv:active{transform:scale(.98)}
+.nv .ic{transition:background-color .2s ease,border-color .2s ease,color .2s ease,transform .2s ease}
+.nv:hover .ic{transform:translateY(-1px)}
+.nv.on .ic{transform:none}
+.ng-h{transition:color .2s ease}
+.chev{display:inline-block;transition:transform .25s cubic-bezier(.2,.7,.2,1)}
+.ng.open .chev{transform:rotate(90deg)}
+.ng-items-wrap{display:grid;grid-template-rows:1fr;transition:grid-template-rows .28s cubic-bezier(.2,.7,.2,1),opacity .2s ease,visibility .28s}
+.ng-items-wrap.closed{grid-template-rows:0fr;opacity:0;visibility:hidden}
+.ng-items-wrap>.ng-items{min-height:0;overflow:hidden}
+.app.rail .ng-items-wrap.closed{grid-template-rows:1fr;opacity:1;visibility:visible}
+.seg button,.btn,select,input{transition:background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease,transform .12s ease}
+.btn:active:not(:disabled){transform:scale(.98)}
+#view.enter{animation:viewIn .32s cubic-bezier(.2,.7,.2,1) both}
+#view.enter .bar>i{animation:barGrow .7s cubic-bezier(.2,.7,.2,1) both;transform-origin:left center}
+#view.enter .card{animation:cardIn .36s cubic-bezier(.2,.7,.2,1) both}
+#view.enter .card:nth-child(2){animation-delay:.04s}
+#view.enter .card:nth-child(3){animation-delay:.08s}
+#view.enter .card:nth-child(4){animation-delay:.12s}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+</style>
+</head><body class="nolog">
+<div class="app" id="app">
+  <aside class="side" id="side" aria-label="Main menu">
+    <div class="side-head">
+      <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" style="flex:none"><rect width="30" height="30" rx="7" style="fill:var(--accent)"/><path d="M4 16h5l3-8 5 14 3-6h6" fill="none" style="stroke:var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="brand-t"><b>Floor Pulse</b><small id="branch"></small></div>
+      <button class="ibtn" id="sideToggle" data-act="rail" aria-label="Retract or open the menu" data-tip="Shrink the menu to icons, or open it again.">‹</button>
+    </div>
+    <nav id="nav" aria-label="Pages"></nav>
+    <div class="side-foot" id="sideAct"></div>
+  </aside>
+  <div class="scrim" data-act="drawer-close" aria-hidden="true"></div>
+  <div class="main">
+    <header class="top">
+      <button class="ibtn menu" data-act="menu" aria-label="Open the menu">☰</button>
+      <div class="ttl"><h1 id="pagetitle"></h1><span class="live" id="stamp"></span></div>
+      <div id="bar1"></div>
+    </header>
+    <main id="view"></main>
+  </div>
+</div>
+<div id="tip" role="tooltip" hidden></div>
+
+<script src="config.js"></script>
+<script>
+'use strict';
+/* ============ constants ============ */
+const CFG=Object.assign({API_URL:'',GOOGLE_CLIENT_ID:'',DATA_URL:'data/mock.json',REFRESH_MIN:5,BRANCH:'Mumbai Branch'},window.FP_CONFIG||{});
+const DEMO=!CFG.API_URL;
+let PL=2,PC=250,CONN_BM=.40,DISB_BM=.30,START=600,END=1140,DAYS=180;
+let TODAY=new Date(),HIST=7,LOG=[],META={},LOADED=null,TD={},ACCESS=[],ALLROWS=[],SESSION=null,TIMER=null;
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dateOf=i=>{const d=new Date(TODAY);d.setDate(d.getDate()-i);return d};
+const dl=d=>d.getDate()+' '+MON[d.getMonth()];
+const fmt=n=>Math.round(n).toLocaleString('en-IN');
+const inr=n=>'₹'+Math.round(n).toLocaleString('en-IN');
+const inrC=n=>{n=Math.round(n);const a=Math.abs(n);return a>=1e7?'₹'+(n/1e7).toFixed(2)+' Cr':a>=1e5?'₹'+(n/1e5).toFixed(2)+' L':'₹'+n.toLocaleString('en-IN')};
+const pc=(x,d=0)=>(x*100).toFixed(d)+'%';
+const hms=sec=>{sec=Math.max(0,Math.round(sec));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),x=sec%60;return h+'h:'+String(m).padStart(2,'0')+'m:'+String(x).padStart(2,'0')+'s'};
+const hm=m=>hms(m*60);
+const hhmm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=v=>{const n=Number(String(v==null?'':v).replace(/[₹,\s]/g,''));return isFinite(n)?n:0};
+const ymd=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const $=s=>document.querySelector(s);
+
+/* ============ hover tips ============ */
+/* Anything with a data-tip attribute explains itself on hover (mouse), focus (keyboard) or tap (phone). */
+const COL={
+ name:'The telecaller. Click a row to open their detail.',
+ today:'Attendance status for today: Present, Absent, Leave, or Not marked (nobody has entered attendance yet).',
+ score:'Efficiency score out of 100. 45% logins, 30% calls, 15% connect rate, 10% disbursals, each compared with the target for the time of day. Higher is better.',
+ change:'Score change: the latest working days compared with the same number of days before them. ▲ green = improving, ▼ red = slipping.',
+ d14:'Small line of the daily score over the last 14 days. Green line = ended higher than it started, red = lower.',
+ cases:'Cases = customer files logged in (a “login”). This is the total in the chosen period.',
+ pend:'Pending: cases logged in and still waiting for a bank/lender decision.',
+ appr:'Approved: cases the lender has approved.',
+ rej:'Rejected: cases the lender has declined.',
+ disb:'Disbursed cases: how many cases actually had the money paid out.',
+ amt:'Disbursed amount: total rupees paid out on disbursed cases.',
+ calls:'Calls dialled in the period.',
+ conn:'Connected: calls where the customer actually picked up and spoke.',
+ connRate:'Connect rate = connected ÷ calls. Red means below the target set in Config.',
+ talk:'Total talk time on connected calls.',
+ avg:'Average length of one connected call.',
+ perDay:'Calls per present day: total calls ÷ days this person was present.',
+ att:'Attendance = days present ÷ working days with a record (Sundays and unmarked days excluded).',
+ team:'The team.',leader:'The team leader.',
+ rank:'Position: 1 is the best score in the period selected.',
+ status:'Present, Absent or Leave for this date.',
+ intime:'Time the person came in, as typed in the Attendance tab.',
+ ni:'Not interested: connected calls where the customer said no.',
+ apprRate:'Approval rate = approved ÷ cases logged in.',
+ disbRate:'Disbursal rate = disbursed ÷ cases logged in. The benchmark is set in Config.',
+ avgTicket:'Average amount per disbursed case = disbursed amount ÷ disbursed cases.',
+ last:'The latest value in this series.',
+ prev:'How much the latest value moved compared with the one before it.',
+ proj:'A dashed straight-line guess three periods ahead, based on the recent slope. It is a guide, not a promise.',
+ code:'Employee code, the unique ID used in the Google Sheet.',
+ att2:'Attendance rate for the period shown.'
+};
+const T=t=>t?` data-tip="${esc(t)}"`:'';
+const TC=k=>T(COL[k]);
+const th=(k,l,r,x)=>`<th class="${r?'r':''}"${TC(k)}${x||''}>${l}</th>`;
+const ths=(k,l,r,sk)=>`<th class="s ${r?'r':''}" data-act="sort" data-v="${sk}"${TC(k)}>${l}${S.sort.k===sk?(S.sort.d>0?' ▲':' ▼'):''}</th>`;
+
+const tipEl=()=>$('#tip');let tipOn=null,tipTimer=null;
+function placeTip(x,y,el){
+  const t=tipEl(),w=t.offsetWidth,h=t.offsetHeight;
+  if(x==null){const b=el.getBoundingClientRect();x=b.left+b.width/2-w/2;y=b.bottom+6}else{x+=12;y+=18}
+  if(x+w>innerWidth-8)x=innerWidth-w-8;if(x<8)x=8;
+  if(y+h>innerHeight-8)y=Math.max(8,(y-h-30));
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function showTip(el,x,y){const txt=el.getAttribute('data-tip');if(!txt)return;const t=tipEl();t.textContent=txt;t.hidden=false;tipOn=el;placeTip(x,y,el)}
+function hideTip(){const t=tipEl();if(t)t.hidden=true;tipOn=null;clearTimeout(tipTimer)}
+const canHover=()=>matchMedia('(hover:hover)').matches;
+document.addEventListener('mouseover',e=>{if(!canHover())return;const el=e.target.closest&&e.target.closest('[data-tip]');if(el){if(el!==tipOn)showTip(el,e.clientX,e.clientY)}else hideTip()});
+document.addEventListener('mousemove',e=>{if(tipOn&&!tipEl().hidden&&canHover())placeTip(e.clientX,e.clientY,tipOn)});
+document.addEventListener('mouseout',e=>{if(!e.relatedTarget)hideTip()});
+document.addEventListener('focusin',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el)showTip(el)});
+document.addEventListener('focusout',hideTip);
+document.addEventListener('scroll',hideTip,true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')hideTip()});
+document.addEventListener('click',e=>{ /* phones: tap a number or box to read what it is, tap again elsewhere to close */
+  if(canHover())return;const el=e.target.closest&&e.target.closest('[data-tip]');
+  if(el&&!e.target.closest('[data-act],select,input,button')){showTip(el);clearTimeout(tipTimer);tipTimer=setTimeout(hideTip,5000)}else hideTip()},true);
+
+/* ============ data: sheet rows -> app model ============ */
+const TEAMS=[];let EMPS=[];
+function istNow(t){
+  const p={};new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(t).forEach(x=>{p[x.type]=x.value});
+  return{y:+p.year,m:+p.month-1,d:+p.day,min:(+p.hour%24)*60+(+p.minute)};
+}
+const KEYS=['calls','conn','mins','logins','appr','rej','pend','disb','amt','ni'];
+const zero=()=>({p:1,calls:0,conn:0,mins:0,logins:0,appr:0,rej:0,pend:0,disb:0,amt:0,ni:0,it:''});
+const blank=(code,name,team)=>{const rec=Array.from({length:DAYS},()=>({p:-1}));rec[0]=zero();return{code,name,team,active:true,rec}};
+const dayIdxOf=s=>Math.round((TODAY-new Date(+s.slice(0,4),+s.slice(5,7)-1,+s.slice(8,10)))/864e5);
+function ingest(d){
+  META=d.meta||{};
+  DAYS=Math.max(14,Math.min(400,+META.history_days||180));
+  const now=istNow(META.asof?new Date(META.asof):new Date());
+  const prevDay=ymd(TODAY),prev=new Map(EMPS.map(e=>[e.code,(e.rec[0]&&e.rec[0].p===1)?e.rec[0].logins:0]));
+  TODAY=new Date(now.y,now.m,now.d);S.min=now.min;
+  const cfg={};(d.config||[]).forEach(r=>{cfg[r.key]=Number(r.value)});
+  PL=cfg.per_head_logins||2;PC=cfg.per_head_calls||250;CONN_BM=cfg.connect_benchmark||.40;DISB_BM=cfg.disb_benchmark||.30;START=cfg.shift_start_min||600;END=cfg.shift_end_min||1140;
+  const rows=d.employees||[];ALLROWS=rows;ACCESS=d.access||[];STUCK=cfg.stuck_days||3;
+  TEAMS.length=0;
+  let tl=d.teams;
+  if(!tl){const seen={};tl=[];rows.forEach(r=>{if(!r.team_id||seen[r.team_id])return;seen[r.team_id]=1;const t=rows.find(x=>x.role==='TL'&&String(x.team_id)===String(r.team_id));tl.push({team_id:String(r.team_id),team_name:r.team_name||r.team_id,leader:t?t.name:'',size:rows.filter(x=>x.role==='TELECALLER'&&x.status!=='LEFT'&&String(x.team_id)===String(r.team_id)).length})})}
+  const ids=tl.map(t=>String(t.team_id));
+  tl.forEach((t,i)=>TEAMS.push({id:String(t.team_id),n:t.team_name||t.team_id,l:t.leader||'',size:t.size||0,c:'var(--c'+(i%5+1)+')'}));
+  const tIdx=id=>ids.indexOf(String(id));
+  EMPS=rows.filter(r=>r.role==='TELECALLER'&&tIdx(r.team_id)>=0).map(r=>({code:String(r.emp_code),name:r.name,team:tIdx(r.team_id),active:r.status!=='LEFT',rec:Array.from({length:DAYS},()=>({p:-1}))}));
+  const by={};EMPS.forEach(e=>{by[e.code]=e});
+  HIST=1;
+  const slot=row=>{const e=by[String(row.emp_code)];if(!e)return null;const i=dayIdxOf(String(row.date).slice(0,10));if(i<0||i>=DAYS)return null;if(i>HIST)HIST=i;return{e,i}};
+  (d.attendance||[]).forEach(r=>{const s=slot(r);if(!s)return;const st=String(r.status).toUpperCase();const o=st==='P'?zero():{p:st==='L'?2:0};o.it=String(r.in_time||'');s.e.rec[s.i]=o});
+  (d.kpi||[]).forEach(r=>{const s=slot(r);if(!s)return;let o=s.e.rec[s.i];if(o.p===0||o.p===2)return;if(o.p===-1)o=s.e.rec[s.i]=zero();
+    o.logins=num(r.logins);o.appr=num(r.approved);o.rej=num(r.rejected);o.pend=num(r.pending);o.disb=num(r.disbursed);o.amt=num(r.disbursed_amount);o.ni=num(r.not_interested)});
+  (d.calls||[]).forEach(r=>{const s=slot(r);if(!s)return;let o=s.e.rec[s.i];if(o.p===0||o.p===2)return;if(o.p===-1)o=s.e.rec[s.i]=zero();
+    o.calls=num(r.calls);o.conn=num(r.connected);o.mins=num(r.talk_seconds)/60});
+  TD={};
+  (d.team_daily||[]).forEach(r=>{const ti=tIdx(r.team_id);if(ti<0)return;const i=dayIdxOf(String(r.date).slice(0,10));if(i<0||i>=DAYS)return;if(i>HIST)HIST=i;
+    (TD[ti]=TD[ti]||[])[i]={pres:num(r.present),abs:num(r.absent),lv:num(r.leave),calls:num(r.calls),conn:num(r.connected),mins:num(r.talk_seconds)/60,logins:num(r.logins),appr:num(r.approved),rej:num(r.rejected),pend:num(r.pending),disb:num(r.disbursed),amt:num(r.disbursed_amount),ni:0}});
+  LOG=(d.efficiency_log||[]).map(r=>{const m=String(r.timestamp).match(/(\d{4}-\d{2}-\d{2})\D+(\d{2}):(\d{2})/);return m?{day:m[1],m:+m[2]*60+(+m[3]),scope:String(r.scope),score:+r.score}:null}).filter(Boolean).sort((a,b)=>a.m-b.m);
+  SYNC=d.sync||null;SYNC_ON=!!d.sync_on;CASES=d.cases||[];CNOTES=d.case_notes||[];TARGETS=d.targets||[];REMARKS=d.remarks||[];DEVICES=d.devices||[];
+  if(d.team_targets)TTARGETS=d.team_targets;else recomputeTT();
+  if(DEMO&&d.directory)DIR=DIR.length?DIR:d.directory;
+  S.locked=false;
+  if(d.role==='TL'){S.role='tl';S.tl=Math.max(0,tIdx(d.team_id));S.locked=true}
+  else if(d.role==='ADMIN'){S.role='admin';S.locked=true}
+  if(S.tl>=TEAMS.length)S.tl=0;
+  S.day=Math.max(0,Math.min(S.day,maxRange()-1));
+  if(prev.size&&prevDay===ymd(TODAY)){
+    const ev=[];EMPS.forEach(e=>{const r=e.rec[0],b=prev.get(e.code)||0;if(r.p===1&&r.logins>b)ev.push({m:S.min,code:e.code,d:r.logins-b,tot:agg(teamEmps(e.team),0,0).logins})});
+    S.feed=[...ev,...S.feed].slice(0,80);
+  }else S.feed=[];
+  LOADED=new Date();
+}
+
+/* ============ sign-in and loading ============ */
+const readSession=()=>{try{const s=JSON.parse(localStorage.getItem('fp-session')||'null');return s&&s.token&&s.user?s:null}catch(x){return null}};
+const saveSession=s=>{try{localStorage.setItem('fp-session',JSON.stringify(s))}catch(x){}};
+async function api(action,body){
+  const res=await fetch(CFG.API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({action,token:SESSION&&SESSION.token,device:deviceInfo()},body||{}))});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  return res.json();
+}
+function signOut(msg){
+  clearInterval(TIMER);TIMER=null;SESSION=null;
+  try{localStorage.removeItem('fp-session');localStorage.removeItem('fp-cache')}catch(x){}
+  try{window.google&&google.accounts.id.disableAutoSelect()}catch(x){}
+  EMPS=[];TEAMS.length=0;TD={};ACCESS=[];ALLROWS=[];LOG=[];CASES=[];CNOTES=[];TARGETS=[];TTARGETS=[];REMARKS=[];DEVICES=[];DIR=[];DIRLOADED=false;
+  Object.assign(S,{sel:null,tab:'live',day:0,feed:[],msg:'',confirm:null,err:''});
+  showLogin(msg);
+}
+function loadGsi(){
+  return new Promise((ok,bad)=>{
+    if(window.google&&google.accounts&&google.accounts.id)return ok();
+    const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;
+    s.onload=()=>ok();s.onerror=()=>bad(new Error('Could not load Google sign-in. Check your internet connection and try again.'));
+    document.head.appendChild(s);
+  });
+}
+async function showLogin(msg,busy){
+  hideTip();
+  $('#bar1').innerHTML='';$('#nav').innerHTML='';$('#sideAct').innerHTML='';$('#pagetitle').textContent='';$('#stamp').textContent='';document.body.classList.add('nolog');
+  $('#view').innerHTML=`<div class="card login"><svg width="44" height="44" viewBox="0 0 30 30" aria-hidden="true"><rect width="30" height="30" rx="7" style="fill:var(--accent)"/><path d="M4 16h5l3-8 5 14 3-6h6" fill="none" style="stroke:var(--bg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+   <h2>Floor Pulse</h2><p class="muted">${busy?'Signing you in…':'Sign in with your Google account'}</p>
+   <div id="gbtn" ${busy?'hidden':''}></div>
+   ${msg?`<p class="msg" role="alert">${esc(msg)}</p>`:''}
+   <p class="note">Only Google accounts added by your admin can get in.</p></div>`;
+  if(busy)return;
+  if(!CFG.GOOGLE_CLIENT_ID){$('#gbtn').outerHTML='<p class="msg">GOOGLE_CLIENT_ID is empty in config.js.</p>';return}
+  try{
+    await loadGsi();
+    google.accounts.id.initialize({client_id:CFG.GOOGLE_CLIENT_ID,callback:onCredential});
+    const el=$('#gbtn');if(el)google.accounts.id.renderButton(el,{theme:'outline',size:'large',text:'signin_with',shape:'rectangular',width:280});
+  }catch(err){const el=$('#gbtn');if(el)el.outerHTML='<p class="msg">'+esc(err.message)+'</p>'}
+}
+async function onCredential(resp){
+  showLogin('',true);
+  try{
+    const r=await api('login',{id_token:resp.credential});
+    if(r.error){showLogin(r.message||'Sign-in failed.');return}
+    try{localStorage.removeItem('fp-cache')}catch(x){}
+    SESSION={token:r.token,user:r.user};saveSession(SESSION);
+    await boot();
+  }catch(err){showLogin('Could not reach the server. Check your internet and try again.')}
+}
+/* returns true (loaded), false (failed, message in S.err) or 'auth' (signed out) */
+async function load(){
+  let d;
+  try{
+    if(DEMO){const res=await fetch(CFG.DATA_URL,{cache:'no-store'});if(!res.ok)throw new Error('HTTP '+res.status);d=await res.json()}
+    else{d=await api('data');if(d.error){const e=new Error(d.message||d.error);e.code=d.error;throw e}}
+    try{localStorage.setItem('fp-cache',JSON.stringify({email:SESSION?SESSION.user.email:'demo',d}))}catch(x){}
+    S.err='';
+  }catch(err){
+    if(err.code==='auth'){signOut(err.message);return 'auth'}
+    let c=null;try{c=JSON.parse(localStorage.getItem('fp-cache')||'null')}catch(x){}
+    if(!c||c.email!==(SESSION?SESSION.user.email:'demo')){S.err=String(err&&err.message||err);return false}
+    d=c.d;S.err=err.code?String(err.message):'Offline or the sheet could not be reached. Showing the last saved data.';
+  }
+  ingest(d);return true;
+}
+async function refresh(){if(S.loading)return;S.loading=true;renderTop();const ae=document.activeElement;const ok=await load();S.loading=false;if(ok==='auth')return;if(!ok){render();return}if(ae&&/^(SELECT|INPUT)$/.test(ae.tagName))renderTop();else render()}
+/* admin changes: demo edits memory, live mode asks the server */
+async function adminDo(action,body,demoFn,after){
+  S.msg='';S.busy=true;render();
+  try{
+    if(DEMO)S.msg=demoFn();
+    else{const r=await api(action,body);if(r.error){if(r.error==='auth'){signOut(r.message);return}throw new Error(r.message||r.error)}S.msg=r.message||'Done.';await load()}
+    if(after)await after();
+  }catch(err){S.msg='Could not do that: '+err.message}
+  S.busy=false;render();
+}
+function logPoint(m){const f=F(m),day=ymd(TODAY);LOG.push({day,m,scope:'BRANCH',score:score(agg(act(),0,0,f)).t});TEAMS.forEach((t,i)=>LOG.push({day,m,scope:t.id,score:score(agg(teamEmps(i),0,0,f)).t}))}
+function simulate(){
+  const before=new Map(act().map(e=>[e.code,e.rec[0].logins||0]));
+  const pool=act().filter(e=>e.rec[0].p===1),n=3+Math.floor(Math.random()*4);
+  for(let k=0;k<n&&pool.length;k++){const e=pool.splice(Math.floor(Math.random()*pool.length),1)[0],r=e.rec[0],c=8+Math.floor(Math.random()*18);
+    r.logins++;r.pend++;r.calls+=c;r.conn+=Math.round(c*.38);r.mins+=Math.round(c*.38*2.8);r.ni+=Math.round(c*.15);
+    if(Math.random()<.3){r.disb++;r.appr++;r.pend=Math.max(0,r.pend-1);r.amt+=Math.round((90000+Math.random()*400000)/1000)*1000}}
+  S.min=Math.min(END,S.min+5);
+  if(S.min%10===0)logPoint(S.min);
+  const ev=[];act().forEach(e=>{const r=e.rec[0],b=before.get(e.code)||0;if(r.logins>b)ev.push({m:S.min,code:e.code,d:r.logins-b,tot:agg(teamEmps(e.team),0,0).logins})});
+  S.feed=[...ev,...S.feed].slice(0,80);LOADED=new Date();
+}
+
+/* ============ state ============ */
+const S={role:'admin',tl:0,tab:'live',range:1,min:0,locked:false,err:'',sel:null,sort:{k:'eff',d:-1},day:0,busy:false,
+  trend:{metric:'eff',level:'team',gran:'day',rebase:false,dir:'top'},feed:[],msg:'',confirm:null};
+Object.assign(S,{navOpen:{},drawer:false,rail:initRail(),loading:false});
+const F=(m)=>Math.max(0,Math.min(1,((m==null?S.min:m)-START)/(END-START)));
+const fOf=i=>i===0?F():1;
+const act=()=>EMPS.filter(e=>e.active);
+const scope=()=>S.role==='admin'?act():act().filter(e=>e.team===S.tl);
+const scopeAll=()=>S.role==='admin'?EMPS:EMPS.filter(e=>e.team===S.tl);   // includes people who left, so history never shrinks
+const H=r=>Math.max(2,Math.min(r,HIST));
+const winW=r=>Math.max(1,Math.min(r<=30?7:14,Math.floor(HIST/2)));
+const maxRange=()=>S.role==='admin'?DAYS:Math.min(60,DAYS);
+const teamsVisible=()=>S.role==='admin'?TEAMS.map((t,i)=>i):[S.tl];
+const teamEmps=(ti)=>act().filter(e=>e.team===ti);
+const teamAll=(ti)=>EMPS.filter(e=>e.team===ti);
+
+/* ============ engine ============ */
+function rec(e,i){return e.rec[i]||null}
+const blankAgg=()=>({calls:0,conn:0,mins:0,logins:0,appr:0,rej:0,pend:0,disb:0,amt:0,ni:0,pres:0,abs:0,lv:0,days:0,tL:0,tC:0});
+function agg(emps,from,to,f){
+  if(f==null)f=F();
+  const s=blankAgg();
+  for(const e of emps)for(let i=from;i<=to;i++){
+    const r=rec(e,i);if(!r||r.p<0)continue;
+    s.days++;
+    if(r.p===1){s.pres++;for(const k of KEYS)s[k]+=r[k]||0;
+      const w=i===0?f:1;s.tL+=PL*w;s.tC+=PC*w}
+    else if(r.p===2)s.lv++;else s.abs++;
+  }
+  return s;
+}
+/* team totals straight from the server (other teams, for team leaders) - same maths as agg */
+function tdAgg(ti,from,to,f){
+  if(f==null)f=F();
+  const s=blankAgg(),a=TD[ti]||[];
+  for(let i=from;i<=to;i++){const r=a[i];if(!r)continue;
+    s.days+=r.pres+r.abs+r.lv;s.pres+=r.pres;s.abs+=r.abs;s.lv+=r.lv;
+    for(const k of KEYS)s[k]+=r[k]||0;
+    const w=i===0?f:1;s.tL+=PL*r.pres*w;s.tC+=PC*r.pres*w}
+  return s;
+}
+/* a team's numbers: from its people when we have them, from server totals when we do not */
+function teamAgg(ti,from,to,f){return EMPS.some(e=>e.team===ti)?agg(teamAll(ti),from,to,f):tdAgg(ti,from,to,f)}
+function score(s){
+  if(!s.tL)return{t:0,rL:0,rC:0,rN:0,rD:0};
+  const rL=s.logins/s.tL,rC=s.tC?s.calls/s.tC:0,rN=s.calls?(s.conn/s.calls)/CONN_BM:0,rD=s.logins?(s.disb/s.logins)/DISB_BM:0;
+  const c=x=>Math.min(1,x);
+  return{t:100*(.45*c(rL)+.30*c(rC)+.15*c(rN)+.10*c(rD)),rL,rC,rN,rD};
+}
+const today=e=>e.rec[0];
+function rankTeams(from,to,f){
+  return TEAMS.map((t,ti)=>{const s=teamAgg(ti,from,to,f);return{ti,s,sc:score(s),att:s.days?s.pres/s.days:0}}).sort((a,b)=>b.sc.t-a.sc.t||b.s.logins-a.s.logins);
+}
+function buckets(range,gran){
+  const out=[];let cur=null;
+  for(let i=1;i<=range;i++){
+    const d=dateOf(i);if(d.getDay()===0&&gran==='day')continue;
+    const key=gran==='day'?i:gran==='week'?Math.floor((i-1)/7):d.getFullYear()*12+d.getMonth();
+    if(!cur||cur.key!==key){cur={key,from:i,to:i,d};out.push(cur)}else cur.to=i;
+  }
+  return out.reverse();
+}
+const blabel=(b,g)=>g==='month'?MON[b.d.getMonth()]:dl(dateOf(b.from));
+/* E is a list of people, or a team number */
+function metricVal(E,b,m){
+  const s=typeof E==='number'?teamAgg(E,b.from,b.to,1):agg(E,b.from,b.to,1);if(!s.days)return null;
+  if(m==='eff')return s.tL?score(s).t:null;
+  if(m==='att')return 100*s.pres/s.days;
+  return s[m];
+}
+function project(vals,k=8,ext=3){
+  const pts=vals.map((v,i)=>[i,v]).filter(p=>p[1]!=null).slice(-k);if(pts.length<3)return[];
+  const n=pts.length,sx=pts.reduce((a,p)=>a+p[0],0),sy=pts.reduce((a,p)=>a+p[1],0),sxx=pts.reduce((a,p)=>a+p[0]*p[0],0),sxy=pts.reduce((a,p)=>a+p[0]*p[1],0);
+  const den=n*sxx-sx*sx;if(!den)return[];
+  const m=(n*sxy-sx*sy)/den,b=(sy-m*sx)/n,last=vals.length-1;
+  return Array.from({length:ext},(_,j)=>Math.max(0,m*(last+1+j)+b));
+}
+const lastNN=v=>{for(let i=v.length-1;i>=0;i--)if(v[i]!=null)return i;return -1};
+
+/* ============ chart helpers ============ */
+function niceStep(x){if(!(x>0))return 1;const p=Math.pow(10,Math.floor(Math.log10(x))),m=x/p;return(m<=1?1:m<=2?2:m<=5?5:10)*p}
+function lineChart(o){
+  const labels=o.labels,series=o.series,h=o.h||250,yFmt=o.yFmt||(v=>Math.round(v)),ext=o.ext||0;
+  const SM=innerWidth<720,W=SM?420:760,L=SM?40:50,Rr=SM?84:132,T=10,B=24,iw=W-L-Rr,ih=h-T-B,n=labels.length+ext;
+  let lo=Infinity,hi=-Infinity;
+  series.forEach(s=>[...s.vals,...(s.proj||[])].forEach(v=>{if(v!=null&&!isNaN(v)){lo=Math.min(lo,v);hi=Math.max(hi,v)}}));
+  if(!isFinite(lo)){lo=0;hi=1}
+  const span=(o.ymin!=null&&o.ymax!=null)?o.ymax-o.ymin:hi-lo;
+  const step=niceStep((span||1)/4);
+  lo=o.ymin!=null?o.ymin:Math.floor(lo/step)*step;hi=o.ymax!=null?o.ymax:Math.ceil(hi/step)*step;if(hi===lo)hi=lo+1;
+  const X=i=>L+(n<=1?iw/2:iw*i/(n-1)),Y=v=>T+ih*(1-(v-lo)/(hi-lo));
+  let g='';
+  for(let v=lo;v<=hi+1e-9;v+=step){g+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="var(--line)" stroke-width="1"/><text x="${L-6}" y="${(Y(v)+3.5).toFixed(1)}" text-anchor="end">${yFmt(v)}</text>`}
+  const every=Math.max(1,Math.ceil(labels.length/6));
+  labels.forEach((l,i)=>{if(i%every===0)g+=`<text x="${X(i).toFixed(1)}" y="${h-6}" text-anchor="middle">${l}</text>`});
+  const path=(vals,off)=>{let d='',pen=false;vals.forEach((v,i)=>{if(v==null||isNaN(v)){pen=false;return}d+=(pen?'L':'M')+X(i+off).toFixed(1)+' '+Y(v).toFixed(1);pen=true});return d};
+  const tags=[];
+  series.forEach(s=>{
+    const col=`stroke:${s.color};fill:none`;
+    if(s.area&&s.vals.length>1){const li=lastNN(s.vals);const fi=s.vals.findIndex(v=>v!=null);
+      if(li>fi)g+=`<path d="${path(s.vals,0)}L${X(li).toFixed(1)} ${Y(lo)}L${X(fi).toFixed(1)} ${Y(lo)}Z" style="fill:${s.color};opacity:.12;stroke:none"/>`}
+    g+=`<path d="${path(s.vals,0)}" style="${col}" stroke-width="${s.bold?3:2}" stroke-linejoin="round" stroke-linecap="round"/>`;
+    const li=lastNN(s.vals);let ey=null,ev=null;
+    if(li>=0){ev=s.vals[li];ey=Y(ev);
+      if(s.proj&&s.proj.length){const pv=[s.vals[li],...s.proj];g+=`<path d="${path(pv,li)}" style="${col}" stroke-width="1.8" stroke-dasharray="4 4" opacity=".8"/>`;
+        ev=s.proj[s.proj.length-1];ey=Y(ev);g+=`<circle cx="${X(n-1).toFixed(1)}" cy="${ey.toFixed(1)}" r="2.5" style="fill:var(--surface);stroke:${s.color}" stroke-width="1.5"/>`}
+      const ex=s.proj&&s.proj.length?X(n-1):X(li);
+      if(!(s.proj&&s.proj.length))g+=`<circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="3.2" style="fill:${s.color}"/>`;
+      tags.push({y:ey,x:ex,s,ev})}
+  });
+  tags.sort((a,b)=>a.y-b.y);for(let i=1;i<tags.length;i++)if(tags[i].y-tags[i-1].y<12)tags[i].y=tags[i-1].y+12;
+  tags.forEach(t=>{g+=`<text class="tag" x="${(t.x+7).toFixed(1)}" y="${(t.y+3.5).toFixed(1)}" style="fill:${t.s.color}">${esc(String(t.s.name).slice(0,9))} ${yFmt(t.ev)}</text>`});
+  return`<svg viewBox="0 0 ${W} ${h}" width="100%" role="img" aria-label="${esc(o.aria||'Line chart')}">${g}</svg>`;
+}
+function spark(v,w=80,h=22){
+  const a=v.filter(x=>x!=null&&!isNaN(x));if(a.length<2)return'';
+  const lo=Math.min(...a),hi=Math.max(...a),sp=hi-lo||1;
+  const pts=a.map((x,i)=>[2+(w-4)*i/(a.length-1),2+(h-4)*(1-(x-lo)/sp)]);
+  const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('');const l=pts[pts.length-1];
+  return`<svg class="spark ${a[a.length-1]>=a[0]?'up':'dn'}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="${l[0].toFixed(1)}" cy="${l[1].toFixed(1)}" r="2.2" fill="currentColor"/></svg>`;
+}
+const delta=p=>p==null||isNaN(p)?'<span class="muted">–</span>':`<span class="dl ${p>=0?'up':'dn'}"${T('Change versus the earlier period. ▲ green is up, ▼ red is down.')}>${p>=0?'▲':'▼'} ${Math.abs(p).toFixed(1)}%</span>`;
+const teamDot=t=>`<i class="dot" style="background:${TEAMS[t].c}"${T('Team '+TEAMS[t].n+(TEAMS[t].l?', leader '+TEAMS[t].l:''))}></i>`;
+const bar=(v,max,col)=>`<div class="bar"><i style="width:${Math.max(0,Math.min(100,max?v/max*100:0)).toFixed(1)}%;${col?'background:'+col:''}"></i></div>`;
+const statusPill=p=>p===1?'<span class="pill p">Present</span>':p===2?'<span class="pill l">Leave</span>':p===0?'<span class="pill a">Absent</span>':'<span class="pill"'+T('Nobody has entered attendance for this person on this day (Sunday, holiday, or not yet marked).')+'>Not marked</span>';
+const rangeSeg=()=>{const mx=maxRange(),opts=S.role==='admin'?[[1,'Today'],[7,'7d'],[30,'30d'],[60,'60d'],[DAYS,'All']]:[[1,'Today'],[7,'7d'],[30,'30d'],[60,'60d']];
+  if(S.range>mx)S.range=mx;
+  return`<div class="seg" role="group" aria-label="Date range"${T('How far back the numbers on this page reach, counted from today. “All” is everything the app has loaded ('+DAYS+' days).')}>${opts.map(o=>`<button data-act="range" data-v="${o[0]}" aria-pressed="${S.range===o[0]}">${o[1]}</button>`).join('')}</div>`};
+const rangeLbl=r=>r>=DAYS&&S.role==='admin'?'all':r;
+/* how a period reads in a heading: 'today', 'the last 7 days' */
+const span=r=>r===1?'today':(r>=DAYS&&S.role==='admin')?'all '+DAYS+' days':'the last '+r+' days';
+const accessNote=()=>S.role==='admin'?'':'<p class="note">Team leader access: your team only, last 60 days.</p>';
+
+/* ============ shared pieces ============ */
+function dailyWinners(E,n){
+  const rows=[];
+  for(let i=1;rows.length<n&&i<Math.min(40,DAYS);i++){
+    const d=dateOf(i);if(d.getDay()===0)continue;
+    let best=null;
+    for(const e of E){const s=agg([e],i,i,1);if(!s.pres)continue;const t=score(s).t;if(!best||t>best.t)best={e,t,s}}
+    let bt=null;
+    if(S.role==='admin')for(let ti=0;ti<TEAMS.length;ti++){const s=teamAgg(ti,i,i,1);if(!s.tL)continue;const t=score(s).t;if(!bt||t>bt.t)bt={ti,t,s}}
+    rows.push({d,best,bt});
+  }
+  return rows;
+}
+const winnersCard=()=>{const E=scope(),rows=dailyWinners(E,7),A=S.role==='admin';
+  return`<div class="card"><h3${T('For each of the last 7 working days: who had the highest efficiency score.')}>Daily top performers, last 7 working days</h3><div class="tw"><table><thead><tr><th>Day</th>${th('name','Top telecaller')}${th('score','Score',1)}${th('cases','Cases',1)}${th('amt','Disbursed ₹',1)}${A?th('team','Top team')+th('score','Score',1)+th('cases','Cases',1):''}</tr></thead><tbody>${
+    rows.map(r=>`<tr><td>${dl(r.d)}</td><td>${r.best?teamDot(r.best.e.team)+esc(r.best.e.name):'–'}</td><td class="r n">${r.best?r.best.t.toFixed(0):'–'}</td><td class="r n">${r.best?r.best.s.logins:'–'}</td><td class="r n">${r.best?inr(r.best.s.amt):'–'}</td>${A?(r.bt?`<td>${teamDot(r.bt.ti)}${esc(TEAMS[r.bt.ti].n)}</td><td class="r n">${r.bt.t.toFixed(0)}</td><td class="r n">${r.bt.s.logins}</td>`:'<td>–</td><td></td><td></td>'):''}</tr>`).join('')}</tbody></table></div></div>`};
+function stageRows(s){
+  const row=(l,v,of,col,tip)=>`<div class="row"${T(tip)}><span>${l}</span>${bar(v,of||1,col)}<span class="n">${fmt(v)}${of?' <span class="muted">'+pc(v/of)+'</span>':''}</span></div>`;
+  return`<div class="cmp">${row('Calls made',s.calls,0,'','Every call dialled.')}${row('Connected',s.conn,s.calls,'','Calls where the customer picked up. The % is connected ÷ calls.')}${row('Customer not interested',s.ni,s.conn,'var(--down)','Connected calls where the customer said no. The % is out of connected calls.')}${row('Cases logged in',s.logins,s.conn,'var(--c1)','Customer files submitted. The % is out of connected calls.')}${row('Approved',s.appr,s.logins,'var(--up)','Cases the lender approved. The % is out of cases logged in.')}${row('Rejected',s.rej,s.logins,'var(--down)','Cases the lender declined. The % is out of cases logged in.')}${row('Pending',s.pend,s.logins,'var(--accent)','Cases still waiting for a decision. The % is out of cases logged in.')}${row('Disbursed',s.disb,s.logins,'var(--up)','Cases where money was paid out. The % is out of cases logged in.')}
+  <div class="row"${T('Total rupees paid out on the disbursed cases above.')}><span>Disbursed amount</span><span></span><span class="n"><b>${inr(s.amt)}</b></span></div></div>`;
+}
+function caseCards(s){
+  return`<div class="grid g4">
+   <div class="card kpi sm" tabindex="0"${TC('cases')}><h3>Cases</h3><div class="v">${fmt(s.logins)}</div><div class="s">logged in</div></div>
+   <div class="card kpi sm" tabindex="0"${TC('pend')}><h3>Pending</h3><div class="v" style="color:var(--accent)">${fmt(s.pend)}</div><div class="s">${s.logins?pc(s.pend/s.logins):'–'} of cases</div></div>
+   <div class="card kpi sm" tabindex="0"${TC('appr')}><h3>Approved</h3><div class="v up">${fmt(s.appr)}</div><div class="s">${s.logins?pc(s.appr/s.logins):'–'} of cases</div></div>
+   <div class="card kpi sm" tabindex="0"${TC('rej')}><h3>Rejected</h3><div class="v dn">${fmt(s.rej)}</div><div class="s">${s.logins?pc(s.rej/s.logins):'–'} of cases</div></div>
+   <div class="card kpi sm" tabindex="0"${TC('disb')}><h3>Disbursed cases</h3><div class="v">${fmt(s.disb)}</div><div class="s">${s.logins?pc(s.disb/s.logins):'–'} of cases</div></div>
+   <div class="card kpi sm" tabindex="0"${TC('amt')}><h3>Disbursed amount</h3><div class="v">${inrC(s.amt)}</div><div class="s">${s.disb?'avg '+inrC(s.amt/s.disb)+' per case':'no disbursals'}</div></div></div>`;
+}
+
+/* ============ views ============ */
+function vLive(){
+  const E=scope(),f=F(),a=agg(E,0,0,f),sc=score(a),n=E.length;
+  const tL=a.pres*PL,tC=a.pres*PC,fL=n*PL,fC=n*PC,pace=f>.02?Math.round(a.logins/f):0;
+  const skey=S.role==='admin'?'BRANCH':(TEAMS[S.tl]||{}).id,pts=LOG.filter(r=>r.scope===skey&&r.day===ymd(TODAY)),labels=pts.map(r=>hhmm(r.m)),vals=pts.map(r=>r.score),d=vals.length>1?vals[vals.length-1]-vals[vals.length-2]:null;
+  const comp=[['Logins vs pace',sc.rL,'Cases logged in so far ÷ the target for this time of day. 100% = exactly on pace.'],['Calls vs pace',sc.rC,'Calls so far ÷ the call target for this time of day.'],['Connect rate vs '+pc(CONN_BM),sc.rN,'Your connect rate ÷ the benchmark. 100% = you are hitting the benchmark.'],['Disbursal vs '+pc(DISB_BM),sc.rD,'Your disbursed-of-logins rate ÷ the benchmark.']];
+  let race=[];
+  if(S.role==='admin')race=TEAMS.map((t,i)=>{const em=teamEmps(i),s=agg(em,0,0,f);return{name:t.n,col:t.c,pres:s.pres,tot:em.length,s,sc:score(s).t,off:false}});
+  else race=E.map(e=>{const s=agg([e],0,0,f);return{name:e.name,col:TEAMS[e.team].c,pres:s.pres,tot:1,s,sc:score(s).t,off:!s.pres}});
+  race.sort((x,y)=>y.s.logins-x.s.logins||y.sc-x.sc);const mx=Math.max(1,...race.map(r=>r.s.logins));
+  const feed=S.feed.filter(x=>E.some(e=>e.code===x.code)).slice(0,10);
+  const present=E.filter(e=>rec(e,0).p===1).map(e=>({e,s:agg([e],0,0,f)})).map(o=>({...o,t:score(o.s).t})).sort((x,y)=>y.t-x.t);
+  let top;
+  if(S.role==='admin'){
+    const bt=TEAMS.map((t,i)=>({i,t:score(agg(teamEmps(i),0,0,f)).t})).sort((x,y)=>y.t-x.t)[0];
+    top=`<h3>Top performers now</h3><div class="cmp">
+      <div class="row"><span class="muted">Branch best</span><span>${present[0]?teamDot(present[0].e.team)+esc(present[0].e.name):'–'}</span><span class="n"${T('Their efficiency score right now.')}>${present[0]?present[0].t.toFixed(0):''}</span></div>
+      <div class="row"><span class="muted">Best team</span><span>${bt?teamDot(bt.i)+esc(TEAMS[bt.i].n):'–'}</span><span class="n"${T('The team’s efficiency score right now.')}>${bt?bt.t.toFixed(0):''}</span></div></div>
+      <h3 style="margin-top:14px">Best in each team</h3><div class="cmp">${TEAMS.map((t,i)=>{const b=present.find(o=>o.e.team===i);return`<div class="row"><span>${teamDot(i)}${esc(t.n)}</span><span>${b?esc(b.e.name):'–'}</span><span class="n">${b?b.t.toFixed(0):''}</span></div>`}).join('')}</div>`;
+  }else top=`<h3>Top in ${esc(TEAMS[S.tl].n)}'s team</h3><div class="cmp">${present.slice(0,5).map((o,k)=>`<div class="row"><span>${k+1}. ${esc(o.e.name)}</span>${bar(o.s.logins,Math.max(1,present[0]?present[0].s.logins:1),TEAMS[S.tl].c)}<span class="n"${T('Efficiency score right now.')}>${o.t.toFixed(0)}</span></div>`).join('')||'<p class="note">No one has logged in yet.</p>'}</div>`;
+  const scope_lbl=S.role==='admin'?'Branch':esc(TEAMS[S.tl].n)+"'s team";
+  let pos='';
+  if(S.role==='tl'&&TEAMS.length>1){
+    const rk=rankTeams(0,0,f),me=rk.findIndex(o=>o.ti===S.tl),lead=rk[0];
+    pos=`<div class="card kpi" tabindex="0"${T('Your team’s rank among all teams by today’s efficiency score. Open the “All teams” tab to see everyone.')}><h3>Your position today</h3><div class="v">#${me+1}<span class="muted" style="font-size:16px"> of ${rk.length}</span></div><div class="s">${me===0?'You are leading today':(lead.sc.t-rk[me].sc.t).toFixed(1)+' points behind '+esc(TEAMS[lead.ti].n)}</div></div>`;
+  }
+  return`${S.role==='tl'?summaryCard(a,sc,n,tL,tC,f):''}<div class="head"><div><h2>Live · ${scope_lbl}</h2><p>Targets follow attendance. Efficiency refreshes every 10 minutes, sheet data every 5. Hover (or tap) any number or box to see what it means.</p></div></div>
+  <div class="grid g4">
+   <div class="card kpi" tabindex="0"${T('Telecallers marked Present today out of everyone on the team. People on leave or absent are not counted in today’s targets.')}><h3>Present today</h3><div class="v">${a.pres}<span class="muted" style="font-size:16px"> / ${n}</span></div><div class="s">${pc(n?a.pres/n:0)} attendance · ${n-a.pres} absent, on leave or not marked</div></div>
+   <div class="card kpi" tabindex="0"${T('Cases (customer files) logged in so far today, out of today’s full-day target of '+PL+' per present person. The thin black line on the bar is where the day should be by now.')}><h3>Cases logged in</h3><div class="v">${a.logins}<span class="muted" style="font-size:16px"> / ${tL}</span></div><div class="bar"><i style="width:${Math.min(100,tL?a.logins/tL*100:0).toFixed(1)}%"></i><span class="mk" style="left:${(f*100).toFixed(1)}%"></span></div><div class="s" style="margin-top:6px">Day target ${tL} · on pace for ${pace}</div></div>
+   <div class="card kpi" tabindex="0"${T('Calls dialled so far today out of the full-day target of '+PC+' per present person. Black line = where you should be by this time.')}><h3>Calls</h3><div class="v">${fmt(a.calls)}<span class="muted" style="font-size:16px"> / ${fmt(tC)}</span></div><div class="bar"><i style="width:${Math.min(100,tC?a.calls/tC*100:0).toFixed(1)}%"></i><span class="mk" style="left:${(f*100).toFixed(1)}%"></span></div><div class="s" style="margin-top:6px">Connect rate ${a.calls?pc(a.conn/a.calls,1):'–'}</div></div>
+   <div class="card kpi" tabindex="0"${T('Money paid out today: the number of disbursed cases and the total rupee amount ('+inr(a.amt)+').')}><h3>Disbursed today</h3><div class="v">${inrC(a.amt)}</div><div class="s">${a.disb} case${a.disb===1?'':'s'} · ${a.pend} pending · ${a.appr} approved · ${a.rej} rejected</div></div>
+   <div class="card kpi" tabindex="0"${TC('score')}><h3>Efficiency score</h3><div class="v">${sc.t.toFixed(1)}</div><div class="s">${delta(d==null?null:d)} vs 10 min ago</div></div>
+   ${pos}
+  </div>
+  <div class="grid g2">
+   <div class="card"><h3${T('The efficiency score recorded every 10 minutes today by the Google Sheet timer.')}>Efficiency, every 10 minutes</h3>${labels.length>1?lineChart({labels,series:[{name:'Score',color:'var(--c2)',vals,area:true}],ymin:0,ymax:100,h:230,aria:'Efficiency score through the day'}):'<p class="note">A point is added here every 10 minutes by the Efficiency_Log tab.</p>'}
+     <div class="cmp" style="margin-top:10px">${comp.map(c=>`<div class="row"${T(c[2])}><span class="muted">${c[0]}</span>${bar(c[1],1.2,c[1]>=1?'var(--up)':c[1]>=.8?'var(--accent)':'var(--down)')}<span class="n">${pc(c[1])}</span></div>`).join('')}</div></div>
+   <div class="card"><h3>Today's targets from attendance</h3>
+     <div class="dots" aria-label="Attendance squares">${E.map(e=>{const p=rec(e,0).p;return`<i class="${p===1?'on':p===2?'lv':''}"${T(e.name+': '+(p===1?'Present':p===2?'On leave':p===0?'Absent':'Not marked yet'))}></i>`}).join('')}</div>
+     <p class="note">Each square is one person: <span class="sw" style="background:var(--up)"></span>present, <span class="sw" style="background:var(--accent)"></span>leave, empty = absent or not marked. Hover a square for the name.</p>
+     <div class="tw"><table><tbody>
+       <tr><td>Present telecallers</td><td class="r n">${a.pres}</td><td class="r muted">of ${n}</td></tr>
+       <tr><td>Login target</td><td class="r n">${tL}</td><td class="r muted">${fL} at full strength</td></tr>
+       <tr><td>Call target</td><td class="r n">${fmt(tC)}</td><td class="r muted">${fmt(fC)} at full strength</td></tr>
+       <tr><td>Lost to absence</td><td class="r n dn">−${fL-tL} logins</td><td class="r n dn">−${fmt(fC-tC)} calls</td></tr></tbody></table></div>
+     <p class="note" style="margin-top:8px">Rule: each present telecaller adds ${PL} logins and ${PC} calls to the day's target.</p></div>
+  </div>
+  <div class="grid g2">
+   <div class="card"><h3>${S.role==='admin'?'Team race, logins today':'Team members, logins today'}</h3>${race.map((r,k)=>`<div class="rrow ${r.off?'off':''}"><span class="n muted"${T('Position by logins today.')}>${k+1}</span><span><i class="dot" style="background:${r.col}"></i>${esc(r.name)}<div class="meta">${S.role==='admin'?r.pres+'/'+r.tot+' present':(r.off?'Not in':'Score '+r.sc.toFixed(0))}</div></span>${bar(r.s.logins,mx,r.col)}<span class="n"${T('Cases logged in · calls'+(S.role==='admin'?' · efficiency score':'')+' · rupees disbursed today')}><b>${r.s.logins}</b> <span class="muted">· ${fmt(r.s.calls)} calls${S.role==='admin'?' · '+r.sc.toFixed(0):''} · ${inrC(r.s.amt)}</span></span></div>`).join('')}</div>
+   <div class="card"><h3>Latest logins</h3><div class="feed">${feed.map(x=>{const e=EMPS.find(y=>y.code===x.code);return`<div><time>${hhmm(x.m)}</time><span><b>${esc(e.name)}</b> +${x.d} login · ${esc(TEAMS[e.team].n)} team now at ${x.tot}</span></div>`}).join('')||'<p class="note">Waiting for the next sync.</p>'}</div></div>
+  </div>
+  <div class="card">${top}</div>`;
+}
+
+/* ---- Day view: pick any date ---- */
+function vDay(){
+  const i=S.day,d=dateOf(i),f=fOf(i),A=S.role==='admin';
+  const E=scopeAll().filter(e=>rec(e,i).p>=0||e.active);
+  const a=agg(E,i,i,f),sc=score(a);
+  const minD=ymd(dateOf(maxRange()-1)),maxD=ymd(dateOf(0));
+  const wd=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
+  const noData=!a.days;
+  const ctl=`<div class="form"><label${T('Pick any date to see exactly what happened on that day.')}>Date<input type="date" id="d-pick" value="${ymd(d)}" min="${minD}" max="${maxD}"></label>
+    <button class="btn" data-act="dayprev"${T('Go to the previous working day (Sundays are skipped).')}>◀ Previous</button><button class="btn" data-act="daynext"${T('Go to the next working day (Sundays are skipped).')}${i===0?' disabled':''}>Next ▶</button><button class="btn" data-act="daytoday"${T('Jump back to today.')}${i===0?' disabled':''}>Today</button></div>`;
+  const head=`<div class="head"><div><h2>Day view · ${wd}, ${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}</h2><p>${i===0?'Today so far (the day is not over, so targets are scaled to the time now).':'The full day, as recorded in the sheet.'} ${S.role==='tl'?'Your team only, plus totals for every team.':''}</p></div>${ctl}</div>${accessNote()}`;
+  if(noData)return head+`<div class="card"><p>No attendance or numbers were recorded for this date.</p><p class="note">${d.getDay()===0?'It is a Sunday, so nothing is expected.':'It may be a holiday, or the sheet has no rows for it yet. Try another date.'}</p></div>`;
+  const n=E.length;
+  const cards=`<div class="grid g4">
+   <div class="card kpi" tabindex="0"${T('How many were marked Present on this date, out of the people listed below.')}><h3>Present</h3><div class="v">${a.pres}<span class="muted" style="font-size:16px"> / ${n}</span></div><div class="s">${a.abs} absent · ${a.lv} on leave</div></div>
+   <div class="card kpi" tabindex="0"${TC('cases')}><h3>Cases logged in</h3><div class="v">${a.logins}<span class="muted" style="font-size:16px"> / ${a.pres*PL}</span></div><div class="s">target ${a.pres*PL} (${PL} per person present)</div></div>
+   <div class="card kpi" tabindex="0"${TC('calls')}><h3>Calls</h3><div class="v">${fmt(a.calls)}<span class="muted" style="font-size:16px"> / ${fmt(a.pres*PC)}</span></div><div class="s">connect rate ${a.calls?pc(a.conn/a.calls,1):'–'}</div></div>
+   <div class="card kpi" tabindex="0"${T('Money paid out on this date: disbursed cases and total rupees.')}><h3>Disbursed</h3><div class="v">${inrC(a.amt)}</div><div class="s">${a.disb} case${a.disb===1?'':'s'}</div></div>
+   <div class="card kpi" tabindex="0"${TC('score')}><h3>Efficiency score</h3><div class="v">${sc.t.toFixed(1)}</div><div class="s">for this ${A?'branch':'team'} on this day</div></div></div>${caseCards(a)}`;
+  const rk=rankTeams(i,i,f);
+  const teamTbl=(A||TEAMS.length>1)?`<div class="card"><h3${T(A?'Every team on this date.':'Every team on this date. For other teams you only see team totals, never their people.')}>${A?'Teams on this day':'All teams on this day'}</h3><div class="tw"><table><thead><tr>${th('rank','#')}${th('team','Team')}${th('leader','Leader')}${th('score','Score',1)}${th('cases','Cases',1)}${th('disb','Disbursed',1)}${th('amt','Amount',1)}${th('calls','Calls',1)}${th('connRate','Connect',1)}</tr></thead><tbody>${rk.filter(o=>o.s.days).map((o,k)=>`<tr class="${!A&&o.ti===S.tl?'sel':''}"><td class="n">${k+1}</td><td>${teamDot(o.ti)}<b>${esc(TEAMS[o.ti].n)}</b>${!A&&o.ti===S.tl?' <span class="muted">(you)</span>':''}</td><td>${esc(TEAMS[o.ti].l)}</td><td class="r n"><b>${o.sc.t.toFixed(1)}</b></td><td class="r n">${o.s.logins}</td><td class="r n">${o.s.disb}</td><td class="r n">${inr(o.s.amt)}</td><td class="r n">${fmt(o.s.calls)}</td><td class="r n">${o.s.calls?pc(o.s.conn/o.s.calls,1):'–'}</td></tr>`).join('')}</tbody></table></div></div>`:'';
+  const rows=E.map(e=>{const r=rec(e,i),s=agg([e],i,i,f);return{e,r,s,t:r.p===1?score(s).t:null}}).sort((x,y)=>(y.t==null?-1:y.t)-(x.t==null?-1:x.t)||x.e.name.localeCompare(y.e.name));
+  const tot=a;
+  const ppl=`<div class="card"><h3${T('Every telecaller on this date. Sorted by efficiency score; people who were not present are at the bottom.')}>Telecallers on this day</h3><div class="tw"><table><thead><tr>${th('name','Telecaller')}${th('status','Status')}${th('intime','In')}${th('score','Score',1)}${th('calls','Calls',1)}${th('conn','Connected',1)}${th('connRate','Connect',1)}${th('cases','Cases',1)}${th('pend','Pending',1)}${th('appr','Approved',1)}${th('rej','Rejected',1)}${th('disb','Disbursed',1)}${th('amt','Amount',1)}</tr></thead><tbody>${rows.map(o=>`<tr${o.e.active?'':' class="muted"'}><td>${teamDot(o.e.team)}<b>${esc(o.e.name)}</b>${o.e.active?'':' <span class="muted">(left)</span>'} <span class="muted n">${o.e.code}</span></td><td>${statusPill(o.r.p)}</td><td class="n">${esc(o.r.it||'–')}</td><td class="r n">${o.t==null?'–':'<b>'+o.t.toFixed(1)+'</b>'}</td><td class="r n">${o.r.p===1?fmt(o.s.calls):'–'}</td><td class="r n">${o.r.p===1?fmt(o.s.conn):'–'}</td><td class="r n ${o.r.p===1&&o.s.calls&&o.s.conn/o.s.calls<CONN_BM?'dn':''}">${o.r.p===1&&o.s.calls?pc(o.s.conn/o.s.calls,1):'–'}</td><td class="r n">${o.r.p===1?o.s.logins:'–'}</td><td class="r n">${o.r.p===1?o.s.pend:'–'}</td><td class="r n">${o.r.p===1?o.s.appr:'–'}</td><td class="r n">${o.r.p===1?o.s.rej:'–'}</td><td class="r n">${o.r.p===1?o.s.disb:'–'}</td><td class="r n">${o.r.p===1?inr(o.s.amt):'–'}</td></tr>`).join('')}
+   <tr class="tot"><td>Total</td><td></td><td></td><td class="r n">${sc.t.toFixed(1)}</td><td class="r n">${fmt(tot.calls)}</td><td class="r n">${fmt(tot.conn)}</td><td class="r n">${tot.calls?pc(tot.conn/tot.calls,1):'–'}</td><td class="r n">${tot.logins}</td><td class="r n">${tot.pend}</td><td class="r n">${tot.appr}</td><td class="r n">${tot.rej}</td><td class="r n">${tot.disb}</td><td class="r n">${inr(tot.amt)}</td></tr></tbody></table></div></div>`;
+  return head+cards+teamTbl+ppl;
+}
+
+function vTeams(){
+  const rows=rankTeams(0,S.range-1);const mx=Math.max(1,...rows.map(r=>r.s.logins));
+  const bs=buckets(H(Math.min(S.range,30)),'day'),labels=bs.map(b=>dl(dateOf(b.from)));
+  const series=TEAMS.map((t,i)=>({name:t.n,color:t.c,vals:bs.map(b=>metricVal(i,b,'eff'))}));
+  return`<div class="head"><div><h2>Teams</h2><p>Every team against every other, using the same efficiency score.</p></div>${rangeSeg()}</div>
+  <div class="card"><h3>Standings</h3><div class="tw"><table><thead><tr>${th('rank','#')}${th('team','Team')}${th('leader','Leader')}${th('att','Attendance',1)}${th('cases','Cases',1)}<th>&nbsp;</th>${th('calls','Calls',1)}${th('connRate','Connect',1)}${th('appr','Approved',1)}${th('disb','Disbursed',1)}${th('amt','Disbursed ₹',1)}${th('score','Score',1)}</tr></thead><tbody>${rows.map((r,k)=>`<tr><td class="n">${k+1}</td><td>${teamDot(r.ti)}<b>${esc(TEAMS[r.ti].n)}</b></td><td>${esc(TEAMS[r.ti].l)}</td><td class="r n">${pc(r.att)}</td><td class="r n">${fmt(r.s.logins)}</td><td style="min-width:90px">${bar(r.s.logins,mx,TEAMS[r.ti].c)}</td><td class="r n">${fmt(r.s.calls)}</td><td class="r n">${r.s.calls?pc(r.s.conn/r.s.calls,1):'–'}</td><td class="r n">${fmt(r.s.appr)}</td><td class="r n">${fmt(r.s.disb)}</td><td class="r n">${inr(r.s.amt)}</td><td class="r n"><b>${r.sc.t.toFixed(1)}</b></td></tr>`).join('')}</tbody></table></div></div>
+  <div class="card"><h3>Team efficiency per working day</h3>${lineChart({labels,series,ymin:0,ymax:100,h:260,aria:'Team efficiency per day'})}</div>
+  ${winnersCard()}`;
+}
+
+/* ---- Team leaders: how every team is doing, totals only ---- */
+function vRank(){
+  const r=S.range,rows=rankTeams(0,r-1),me=rows.findIndex(o=>o.ti===S.tl),lead=rows[0];
+  const bs=buckets(H(Math.min(r,30)),'day'),labels=bs.map(b=>dl(dateOf(b.from)));
+  const series=TEAMS.map((t,i)=>({name:t.n,color:t.c,bold:i===S.tl,vals:bs.map(b=>metricVal(i,b,'eff'))}));
+  const mx=Math.max(1,...rows.map(o=>o.s.logins));
+  const msg=me<0?'':me===0?`You are <b>#1</b> of ${rows.length}, ${rows[1]?(rows[0].sc.t-rows[1].sc.t).toFixed(1)+' points clear of '+esc(TEAMS[rows[1].ti].n):'with no other team to compare'}.`:`You are <b>#${me+1}</b> of ${rows.length}, ${(lead.sc.t-rows[me].sc.t).toFixed(1)} points behind ${esc(TEAMS[lead.ti].n)}${rows[me-1]&&me>1?' and '+(rows[me-1].sc.t-rows[me].sc.t).toFixed(1)+' behind the team just above you':''}.`;
+  return`<div class="head"><div><h2>All teams</h2><p>How every team is doing and where you stand. ${msg}</p></div>${rangeSeg()}</div>
+  <div class="card"><h3${T('Teams ranked by efficiency score over the period you picked. Your team is highlighted.')}>Team ranking, ${span(r)}</h3><div class="tw"><table><thead><tr>${th('rank','#')}${th('team','Team')}${th('leader','Leader')}${th('score','Score',1)}${th('att','Attendance',1)}${th('cases','Cases',1)}<th>&nbsp;</th>${th('disb','Disbursed',1)}${th('amt','Disbursed ₹',1)}${th('connRate','Connect',1)}</tr></thead><tbody>${rows.map((o,k)=>`<tr class="${o.ti===S.tl?'sel':''}"><td class="n">${k+1}</td><td>${teamDot(o.ti)}<b>${esc(TEAMS[o.ti].n)}</b>${o.ti===S.tl?' <span class="muted">(you)</span>':''}</td><td>${esc(TEAMS[o.ti].l)}</td><td class="r n"><b>${o.sc.t.toFixed(1)}</b></td><td class="r n">${pc(o.att)}</td><td class="r n">${fmt(o.s.logins)}</td><td style="min-width:90px">${bar(o.s.logins,mx,TEAMS[o.ti].c)}</td><td class="r n">${fmt(o.s.disb)}</td><td class="r n">${inr(o.s.amt)}</td><td class="r n">${o.s.calls?pc(o.s.conn/o.s.calls,1):'–'}</td></tr>`).join('')}</tbody></table></div>
+   <p class="note" style="margin-top:8px">You see team totals only. Other teams’ people, names and individual numbers are private to their own leaders.</p></div>
+  <div class="card"><h3>Team efficiency per working day</h3>${lineChart({labels,series,ymin:0,ymax:100,h:260,aria:'Team efficiency per day for every team'})}<p class="note">Your team is the thicker line.</p></div>`;
+}
+
+function personStats(e,r){
+  const s=agg([e],0,r-1),sc=score(s),W=winW(r);
+  const A=score(agg([e],1,W,1)).t,B=score(agg([e],W+1,2*W,1)).t;
+  const sp=[];for(let i=14;i>=1;i--){const x=agg([e],i,i,1);sp.push(x.tL?score(x).t:null)}
+  return{e,s,sc,dl:B?(A-B)/B*100:null,sp,att:s.days?s.pres/s.days:0,p:today(e).p};
+}
+function empDetail(e){
+  const o=personStats(e,S.range),c=o.sc;
+  const comps=[['Login volume',c.rL,'Cases logged in ÷ target for the days present.'],['Call volume',c.rC,'Calls made ÷ call target for the days present.'],['Connect rate',c.rN,'Their connect rate ÷ the benchmark.'],['Disbursal',c.rD,'Their disbursed-of-logins rate ÷ the benchmark.']];
+  const hi=[...comps].sort((a,b)=>b[1]-a[1])[0],lo=[...comps].sort((a,b)=>a[1]-b[1])[0];
+  const cells=[];for(let i=27;i>=0;i--){const r=e.rec[i];cells.push([!r||r.p<0?'':r.p===1?'p':r.p===2?'l':'a',dl(dateOf(i))+': '+(!r||r.p<0?'no record (Sunday or not entered)':r.p===1?'Present':r.p===2?'On leave':'Absent')])}
+  const bs=buckets(H(Math.min(S.range,60)),'day'),labels=bs.map(b=>dl(dateOf(b.from))),vals=bs.map(b=>metricVal([e],b,'eff'));
+  return`<div class="card"><div class="head"><div><h2 style="font-size:17px">${teamDot(e.team)}${esc(e.name)} <span class="muted n" style="font-size:12px">${e.code}</span></h2><p>${esc(TEAMS[e.team].n)}'s team · score ${c.t.toFixed(1)} over ${span(S.range)}</p></div><button class="btn" data-act="close">Close</button></div>
+  <h3 style="margin-top:12px">Cases and stages, ${span(S.range)}</h3>${caseCards(o.s)}
+  <div class="grid g2" style="margin-top:12px"><div><h3>Strong and lacking</h3>
+   <div class="cmp">${comps.map(x=>`<div class="row"${T(x[2]+' 100% = on target.')}><span class="muted">${x[0]}</span>${bar(x[1],1.2,x[1]>=1?'var(--up)':x[1]>=.8?'var(--accent)':'var(--down)')}<span class="n">${pc(x[1])}</span></div>`).join('')}</div>
+   <p style="margin:10px 0 0"><span class="up"><b>Strong:</b></span> ${hi[0].toLowerCase()} at ${pc(hi[1])} of benchmark. <span class="dn"><b>Lacking:</b></span> ${lo[0].toLowerCase()} at ${pc(lo[1])}.</p>
+   <h3 style="margin-top:14px">Last 4 weeks attendance</h3><div class="heat" style="grid-template-columns:repeat(14,1fr)">${cells.map(c=>`<i class="${c[0]}"${T(c[1])}></i>`).join('')}</div>
+   <p class="note" style="margin-top:6px">Green present · red absent · amber leave · empty no record. Hover a box for the date. ${o.s.pres} present · ${o.s.abs} absent · ${o.s.lv} leave in this range.</p></div>
+  <div><h3>Efficiency trend</h3>${lineChart({labels,series:[{name:e.name.split(' ')[0],color:TEAMS[e.team].c,vals,proj:project(vals),area:true}],ext:3,ymin:0,ymax:100,h:220,aria:'Employee efficiency trend with projection'})}<p class="note">Dashed line = where the recent slope would take the score.</p></div></div></div>`;
+}
+function monthCells(e){const m=curMonth(),tg=tEmp(e.code,m);if(!tg)return'<td class="r n muted">—</td><td class="r n muted">—</td>';const a=monthAmt([e],m),p=progress(a,tg,pace(m));return`<td class="r n">${inrC(tg)}</td><td class="r n"><span class="pill ${p.cls}">${pc(p.pct)}</span></td>`}
+function vPeople(){
+  const E=scope(),rows=E.map(e=>personStats(e,S.range));
+  const key={name:o=>o.e.name,eff:o=>o.sc.t,dl:o=>o.dl==null?-999:o.dl,logins:o=>o.s.logins,pend:o=>o.s.pend,appr:o=>o.s.appr,rej:o=>o.s.rej,disb:o=>o.s.disb,amt:o=>o.s.amt,calls:o=>o.s.calls,att:o=>o.att};
+  const kf=key[S.sort.k]||key.eff;rows.sort((a,b)=>{const x=kf(a),y=kf(b);return(x>y?1:x<y?-1:0)*S.sort.d});
+  const sel=S.sel&&E.find(e=>e.code===S.sel);
+  return`<div class="head"><div><h2>Telecallers</h2><p>Click a row for cases, strengths, gaps, attendance and projection. Click a column title to sort. Change compares the last ${winW(S.range)} working days with the ${winW(S.range)} before.</p></div>${rangeSeg()}</div>${accessNote()}
+  ${sel?empDetailX(sel):''}
+  <div class="card"><div class="tw"><table><thead><tr>${ths('name','Telecaller',0,'name')}${th('today','Today')}${ths('score','Score',1,'eff')}${ths('change','Change',1,'dl')}${th('d14','14 days')}${ths('cases','Cases',1,'logins')}${ths('pend','Pending',1,'pend')}${ths('appr','Approved',1,'appr')}${ths('rej','Rejected',1,'rej')}${ths('disb','Disbursed',1,'disb')}${ths('amt','Disbursed ₹',1,'amt')}${th('mt','Month target')}${th('mp','% of target')}${ths('calls','Calls',1,'calls')}${ths('att','Attendance',1,'att')}</tr></thead><tbody>${rows.map(o=>`<tr class="clk ${o.e.code===S.sel?'sel':''}" data-act="pick" data-v="${o.e.code}"><td>${teamDot(o.e.team)}<b>${esc(o.e.name)}</b> <span class="muted n">${o.e.code}</span></td><td>${statusPill(o.p)}</td><td class="r n"><b>${o.sc.t.toFixed(1)}</b></td><td class="r">${delta(o.dl)}</td><td>${spark(o.sp)}</td><td class="r n">${fmt(o.s.logins)}</td><td class="r n">${fmt(o.s.pend)}</td><td class="r n">${fmt(o.s.appr)}</td><td class="r n">${fmt(o.s.rej)}</td><td class="r n">${fmt(o.s.disb)}</td><td class="r n"><b>${inr(o.s.amt)}</b></td>${monthCells(o.e)}<td class="r n">${fmt(o.s.calls)}</td><td class="r n">${pc(o.att)}</td></tr>`).join('')}</tbody></table></div></div>
+  ${winnersCard()}`;
+}
+
+function vPipeline(){
+  const E=scope(),EA=scopeAll(),r=S.range,s=agg(EA,0,r-1);
+  const mtdTo=TODAY.getDate()-1;
+  const mtd=E.map(e=>({e,s:agg([e],0,mtdTo)})).sort((a,b)=>b.s.amt-a.s.amt||b.s.disb-a.s.disb);
+  const mtdT=teamsVisible().map(ti=>({ti,s:teamAgg(ti,0,mtdTo)})).sort((a,b)=>b.s.amt-a.s.amt||b.s.disb-a.s.disb);
+  const dim=new Date(TODAY.getFullYear(),TODAY.getMonth()+1,0).getDate();
+  let wdTotal=0;for(let d=1;d<=dim;d++)if(new Date(TODAY.getFullYear(),TODAY.getMonth(),d).getDay()!==0)wdTotal++;
+  const cum=[],labels=[];let run=0,runA=0,wdDone=0,wdEl=0;
+  for(let i=mtdTo;i>=0;i--){const d=dateOf(i);if(d.getDay()===0)continue;const w=i===0?F():1;wdEl+=w;const s0=agg(EA,i,i,F());if(!s0.days)continue;run+=s0.disb;runA+=s0.amt;cum.push(runA);labels.push(d.getDate()+'');wdDone+=w}
+  const rate=wdDone?run/wdDone:0,rateA=wdDone?runA/wdDone:0,remain=Math.max(0,wdTotal-wdEl),proj=Math.round(run+rate*remain),projA=runA+rateA*remain;
+  const pj=[];const remDays=Math.round(remain);for(let j=1;j<=remDays;j++)pj.push(runA+rateA*j);
+  const leadA=mtd[0]?mtd[0].s.amt:0,mx=Math.max(1,leadA);
+  const entities=S.role==='admin'?TEAMS.map((t,i)=>({name:t.n,ti:i,s:teamAgg(i,0,r-1)})):[];
+  const tbl=(rows,first)=>`<div class="tw"><table><thead><tr><th>${first}</th>${th('cases','Cases',1)}${th('pend','Pending',1)}${th('appr','Approved',1)}${th('rej','Rejected',1)}${th('disb','Disbursed',1)}${th('amt','Disbursed ₹',1)}${th('avgTicket','Avg per case',1)}${th('apprRate','Approval',1)}${th('disbRate','Disb. of cases',1)}</tr></thead><tbody>${rows.map(o=>`<tr><td>${o.dot}<b>${esc(o.name)}</b></td><td class="r n">${o.s.logins}</td><td class="r n">${o.s.pend}</td><td class="r n">${o.s.appr}</td><td class="r n">${o.s.rej}</td><td class="r n"><b>${o.s.disb}</b></td><td class="r n"><b>${inr(o.s.amt)}</b></td><td class="r n">${o.s.disb?inr(o.s.amt/o.s.disb):'–'}</td><td class="r n">${o.s.logins?pc(o.s.appr/o.s.logins):'–'}</td><td class="r n">${o.s.logins?pc(o.s.disb/o.s.logins):'–'}</td></tr>`).join('')}</tbody></table></div>`;
+  const people=E.map(e=>({name:e.name,dot:teamDot(e.team),s:agg([e],0,r-1)})).sort((a,b)=>b.s.amt-a.s.amt||b.s.disb-a.s.disb);
+  return`<div class="head"><div><h2>Cases and disbursal</h2><p>Where customers sit after the call: pending, approved, rejected, disbursed, and the rupees paid out.</p></div>${rangeSeg()}</div>${accessNote()}
+  ${caseCards(s)}
+  <div class="grid g2"><div class="card"><h3>Stages, ${span(r)}</h3>${stageRows(s)}</div>
+   <div class="card"><h3${T('Month to date means from the 1st of this month up to now.')}>${MON[TODAY.getMonth()]} disbursal, month to date</h3>
+     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))"><div${T('Rupees disbursed since the 1st of the month.')}><div class="muted" style="font-size:12px">So far</div><div class="n" style="font:700 22px var(--mono)">${inrC(runA)}</div><div class="muted" style="font-size:12px">${run} cases</div></div><div${T('Average rupees disbursed per working day this month.')}><div class="muted" style="font-size:12px">Per working day</div><div class="n" style="font:700 22px var(--mono)">${inrC(rateA)}</div><div class="muted" style="font-size:12px">${rate.toFixed(1)} cases</div></div><div${T('If the month keeps going at today’s pace: this is where it ends. A guide, not a promise.')}><div class="muted" style="font-size:12px">Projected month end</div><div class="n" style="font:700 22px var(--mono)">${inrC(projA)}</div><div class="muted" style="font-size:12px">${proj} cases</div></div></div>
+     ${lineChart({labels,series:[{name:'Disbursed',color:'var(--c1)',vals:cum,proj:pj,area:true}],ext:pj.length,h:200,yFmt:inrC,aria:'Cumulative disbursed amount with projection'})}
+     <p class="note">Dashed line continues at the current daily pace across ${remDays} remaining working days.</p></div></div>
+  <div class="grid g2"><div class="card"><h3${T('Ranked by rupees disbursed this month. The red number is how far behind the leader.')}>Who is ahead, month to date</h3><div class="cmp">${mtd.slice(0,8).map((o,k)=>`<div class="row"><span>${k+1}. ${teamDot(o.e.team)}${esc(o.e.name)}</span>${bar(o.s.amt,mx,TEAMS[o.e.team].c)}<span class="n">${inrC(o.s.amt)}${k?' <span class="dn">−'+inrC(leadA-o.s.amt).replace('₹','')+'</span>':''}</span></div>`).join('')}</div></div>
+   ${S.role==='admin'?`<div class="card"><h3>Teams, month to date</h3><div class="cmp">${mtdT.map((o,k)=>`<div class="row"><span>${k+1}. ${teamDot(o.ti)}${esc(TEAMS[o.ti].n)}</span>${bar(o.s.amt,Math.max(1,mtdT[0].s.amt),TEAMS[o.ti].c)}<span class="n">${inrC(o.s.amt)}${k?' <span class="dn">−'+inrC(mtdT[0].s.amt-o.s.amt).replace('₹','')+'</span>':''}</span></div>`).join('')}</div></div>`:''}</div>
+  ${S.role==='admin'?`<div class="card"><h3>Stages by team</h3>${tbl(entities.map(x=>({name:x.name,dot:teamDot(x.ti),s:x.s})),'Team')}</div>`:''}
+  <div class="card"><h3>Stages by telecaller</h3>${tbl(people,'Telecaller')}</div>`;
+}
+
+/* ---- team-wise reports: calls and logins ---- */
+const sumS=list=>list.reduce((t,s)=>{['calls','conn','mins','logins','appr','rej','pend','disb','amt','pres','days'].forEach(k=>{t[k]+=s[k]||0});return t},blankAgg());
+function teamBlocks(r){
+  return (S.role==='admin'?TEAMS.map((t,i)=>i):[S.tl]).map(ti=>({ti,s:teamAgg(ti,0,r-1),em:teamAll(ti).map(e=>({e,s:agg([e],0,r-1)})).sort((a,b)=>b.s.calls-a.s.calls||a.e.name.localeCompare(b.e.name))}));
+}
+function vCalls(){
+  const r=S.range,A=S.role==='admin',blocks=teamBlocks(r),all=sumS(blocks.map(b=>b.s));
+  const line=(nameHtml,s,cls)=>`<tr class="${cls}"><td>${nameHtml}</td><td class="r n"><b>${fmt(s.calls)}</b></td><td class="r n">${fmt(s.conn)}</td><td class="r n ${s.calls&&s.conn/s.calls<CONN_BM?'dn':''}">${s.calls?pc(s.conn/s.calls,1):'–'}</td><td class="r n">${hms(s.mins*60)}</td><td class="r n">${s.conn?hms(s.mins*60/s.conn):'–'}</td><td class="r n">${s.pres?fmt(s.calls/s.pres):'–'}</td></tr>`;
+  const body=blocks.map(b=>{const t=TEAMS[b.ti];if(!t)return'';
+    return line(`${teamDot(b.ti)}<b>${esc(t.n)}</b> <span class="muted">${esc(t.l||'')}</span>`,b.s,'grp')+
+      (b.em.length?b.em.map(o=>line(`${teamDot(b.ti)}${esc(o.e.name)} <span class="muted n">${esc(o.e.code)}</span>${o.e.active?'':' <span class="muted">(left)</span>'}`,o.s,o.e.active?'':'muted')).join(''):'<tr><td colspan="7" class="muted">No telecallers in this team.</td></tr>');
+  }).join('');
+  const bs=buckets(H(Math.min(r,30)),'day'),labels=bs.map(b=>dl(dateOf(b.from)));
+  const series=A?TEAMS.map((t,i)=>({name:t.n,color:t.c,vals:bs.map(b=>metricVal(i,b,'calls'))})):[{name:'Team',color:TEAMS[S.tl].c,vals:bs.map(b=>metricVal(scopeAll(),b,'calls')),area:true}];
+  return`<div class="head"><div><h2>Calls report</h2><p>Calls, connected calls and talk time, team by team. Talk time and average call are shown as h:m:s. ${A?'Every team and every telecaller.':'Your team only.'}</p></div>${rangeSeg()}</div>${accessNote()}
+  <div class="card"><h3>Team by team, ${span(r)}</h3><div class="tw"><table><thead><tr><th>Telecaller</th>${th('calls','Calls',1)}${th('conn','Connected',1)}${th('connRate','Connect rate',1)}${th('talk','Talk time',1)}${th('avg','Average call',1)}${th('perDay','Calls per present day',1)}</tr></thead><tbody>${body}${A?line('<b>Branch total</b>',all,'tot'):''}</tbody></table></div></div>
+  <div class="card"><h3>Calls per working day</h3>${lineChart({labels,series,h:230,yFmt:v=>fmt(v),aria:'Calls per day'})}</div>`;
+}
+function vLogins(){
+  const r=S.range,A=S.role==='admin',blocks=teamBlocks(r);
+  const days=[];for(let i=0;days.length<7&&i<DAYS;i++){if(dateOf(i).getDay()!==0)days.push(i)}days.reverse();
+  const dayHead=days.map(i=>`<th class="r">${dl(dateOf(i))}</th>`).join('');
+  const row=(nameHtml,s,vals,cls)=>`<tr class="${cls}"><td>${nameHtml}</td><td class="r n"><b>${fmt(s.logins)}</b></td><td class="r n">${fmt(s.appr)}</td><td class="r n">${fmt(s.rej)}</td><td class="r n">${fmt(s.pend)}</td><td class="r n">${fmt(s.disb)}</td>${vals.map(v=>`<td class="r n">${v==null?'–':fmt(v)}</td>`).join('')}</tr>`;
+  const body=blocks.map(b=>{const t=TEAMS[b.ti];if(!t)return'';
+    const dv=days.map(i=>{const s=teamAgg(b.ti,i,i,1);return s.days?s.logins:null});
+    return row(`${teamDot(b.ti)}<b>${esc(t.n)}</b> <span class="muted">${esc(t.l||'')}</span>`,b.s,dv,'grp')+
+      (b.em.length?b.em.map(o=>{const ov=days.map(i=>{const s=agg([o.e],i,i,1);return s.days?s.logins:null});return row(`${teamDot(b.ti)}${esc(o.e.name)} <span class="muted n">${esc(o.e.code)}</span>${o.e.active?'':' <span class="muted">(left)</span>'}`,o.s,ov,o.e.active?'':'muted')}).join(''):'<tr><td colspan="12" class="muted">No telecallers in this team.</td></tr>');
+  }).join('');
+  const grand=sumS(blocks.map(b=>b.s)),gv=days.map(i=>{const s=sumS(blocks.map(b=>teamAgg(b.ti,i,i,1)));return s.days?s.logins:null});
+  return`<div class="head"><div><h2>Logins</h2><p>Cases logged in (logins) for every telecaller, team by team. The totals follow the range you pick. The day columns always show the last seven working days, oldest first. ${A?'Every team.':'Your team only.'}</p></div>${rangeSeg()}</div>
+  <div class="card"><h3${T('Logins = customer files logged in that day. The totals follow the range you pick; the day columns always show the last 7 working days.')}>Team by team, ${span(r)}</h3><div class="tw"><table><thead><tr><th>Telecaller</th>${th('cases','Logins',1)}${th('appr','Approved',1)}${th('rej','Rejected',1)}${th('pend','Pending',1)}${th('disb','Disbursed',1)}${dayHead}</tr></thead><tbody>${body}${A?row('<b>Branch total</b>',grand,gv,'tot'):''}</tbody></table></div>
+  <p class="note" style="margin-top:8px">A dash means there is no attendance record for that day (Sunday, or not entered yet).</p></div>`;
+}
+function trendSeries(){
+  const T0=S.trend,r=H(Math.min(S.range<30?30:S.range,maxRange())),bs=buckets(r,T0.gran),E=scope();
+  let list=[];
+  if(T0.level==='branch'&&S.role==='admin')list=[{name:'Branch',color:'var(--c1)',E:scopeAll()}];
+  else if(T0.level==='team'&&S.role==='admin')list=TEAMS.map((t,i)=>({name:t.n,color:t.c,E:i}));
+  else if(T0.level==='team')list=[{name:TEAMS[S.tl].n,color:TEAMS[S.tl].c,E:scopeAll()}];
+  else{
+    const cols=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--muted)'];
+    list=E.map(e=>{const v=bs.map(b=>metricVal([e],b,T0.metric)).filter(x=>x!=null);return{name:e.name.split(' ')[0],E:[e],avg:v.length?v.reduce((a,b)=>a+b,0)/v.length:0}})
+      .sort((a,b)=>T0.dir==='top'?b.avg-a.avg:a.avg-b.avg).slice(0,6).map((o,i)=>({...o,color:cols[i]}));
+  }
+  const labels=bs.map(b=>blabel(b,T0.gran));
+  list.forEach(s=>{let v=bs.map(b=>metricVal(s.E,b,T0.metric));
+    if(T0.rebase){const f0=v.find(x=>x!=null);if(f0)v=v.map(x=>x==null?null:x/f0*100)}
+    s.vals=v;s.proj=project(v)});
+  return{labels,list};
+}
+function vTrends(){
+  const T0=S.trend,{labels,list}=trendSeries();
+  const names={eff:'Efficiency',logins:'Cases (logins)',calls:'Calls',disb:'Disbursed cases',amt:'Disbursed ₹',att:'Attendance %'};
+  const yf=T0.rebase?v=>Math.round(v):(T0.metric==='calls'?v=>fmt(v):T0.metric==='amt'?inrC:v=>Math.round(v));
+  const opt=(k,v,l)=>`<option value="${v}" ${T0[k]===v?'selected':''}>${l}</option>`;
+  const lv=S.role==='admin'?[['branch','Branch'],['team','Teams'],['emp','Telecallers']]:[['team','My team'],['emp','Telecallers']];
+  if(!lv.some(x=>x[0]===T0.level))T0.level=lv[0][0];
+  return`<div class="head"><div><h2>Trends</h2><p>Who is rising or falling, with a dashed projection from the recent slope.</p></div>${rangeSeg()}</div>${accessNote()}
+  <div class="card"><div class="form" style="margin-bottom:12px">
+   <label${T('What to plot: efficiency score, cases, calls, disbursed cases, rupees disbursed, or attendance.')}>Measure<select id="t-metric">${Object.keys(names).map(k=>opt('metric',k,names[k])).join('')}</select></label>
+   <label${T('Who to plot: the whole branch, each team, or individual telecallers.')}>Show<select id="t-level">${lv.map(x=>opt('level',x[0],x[1])).join('')}</select></label>
+   <label${T('Group the points by day, week or month.')}>Period<select id="t-gran">${opt('gran','day','Daily')}${opt('gran','week','Weekly')}${opt('gran','month','Monthly')}</select></label>
+   ${T0.level==='emp'?`<label${T('Show the six strongest or the six weakest telecallers on this measure.')}>Telecallers<select id="t-dir">${opt('dir','top','Top 6')}${opt('dir','bottom','Bottom 6')}</select></label>`:''}
+   <label style="grid-auto-flow:column;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg)"${T('Starts every line at 100 so you can compare how fast each is growing, whatever its size.')}><input type="checkbox" id="t-rebase" ${T0.rebase?'checked':''}>Rebase to 100</label></div>
+   ${labels.length>1?lineChart({labels,series:list,ext:3,h:300,yFmt:yf,aria:names[T0.metric]+' trend'}):'<p class="note">Not enough history for this view yet. Daily needs 2 working days, weekly 2 weeks, monthly 2 months.</p>'}</div>
+  <div class="card"><h3>Ticker</h3><div class="tw"><table><thead><tr><th>Name</th>${th('last','Last',1)}${th('prev','Change vs previous',1)}<th>Trend</th>${th('proj','Projected, 3 periods ahead',1)}</tr></thead><tbody>${list.map(s=>{const li=lastNN(s.vals),last=li>=0?s.vals[li]:null;let prev=null;for(let i=li-1;i>=0;i--)if(s.vals[i]!=null){prev=s.vals[i];break}
+    const pr=s.proj.length?s.proj[s.proj.length-1]:null;
+    return`<tr><td><i class="dot" style="background:${s.color}"></i><b>${esc(s.name)}</b></td><td class="r n">${last==null?'–':yf(last)}</td><td class="r">${delta(prev?(last-prev)/prev*100:null)}</td><td>${spark(s.vals.slice(-14))}</td><td class="r n">${pr==null?'–':yf(pr)} ${pr!=null&&last?delta((pr-last)/last*100):''}</td></tr>`}).join('')}</tbody></table></div></div>`;
+}
+
+function vAttendance(){
+  const E=scope(),r=S.range;
+  const a=agg(E,0,0,1);
+  const people=E.map(e=>({e,s:agg([e],0,r-1,1)})).filter(o=>o.s.days);
+  const best=[...people].sort((x,y)=>y.s.pres/y.s.days-x.s.pres/x.s.days).slice(0,5);
+  const worst=[...people].sort((x,y)=>(y.s.abs+y.s.lv)-(x.s.abs+x.s.lv)).slice(0,5);
+  const bs=buckets(H(Math.min(r<30?30:r,60)),'day'),labels=bs.map(b=>dl(dateOf(b.from)));
+  const series=S.role==='admin'?TEAMS.map((t,i)=>({name:t.n,color:t.c,vals:bs.map(b=>metricVal(i,b,'att'))})):[{name:'Team',color:TEAMS[S.tl].c,vals:bs.map(b=>metricVal(scopeAll(),b,'att')),area:true}];
+  const grp=teamsVisible().map(ti=>{const em=teamEmps(ti),p=em.filter(e=>today(e).p===1).length;
+    return`<div class="card"><h3>${teamDot(ti)}${esc(TEAMS[ti].n)} · ${p}/${em.length} present</h3>${bar(p,em.length,TEAMS[ti].c)}<div class="chips" style="margin-top:10px">${em.map(e=>{const p=today(e).p;return`<span class="chip ${p===1?'p':p===2?'l':'a'}"${T(e.name+': '+(p===1?'Present':p===2?'On leave':p===0?'Absent':'Not marked yet'))}>${esc(e.name.split(' ')[0])}</span>`}).join('')}</div></div>`}).join('');
+  const li=(o,mode)=>`<div class="row"><span>${teamDot(o.e.team)}${esc(o.e.name)}</span>${bar(mode?o.s.abs+o.s.lv:o.s.pres,o.s.days,mode?'var(--down)':'var(--up)')}<span class="n">${mode?(o.s.abs+o.s.lv)+' days':pc(o.s.pres/o.s.days)}</span></div>`;
+  return`<div class="head"><div><h2>Attendance</h2><p>Presentees and absentees for today, then who is in most and who takes the most leave.</p></div>${rangeSeg()}</div>${accessNote()}
+  <div class="grid g4"><div class="card kpi" tabindex="0"${T('How many are marked Present today out of the whole team.')}><h3>${S.role==='admin'?'Branch':'Team'} today</h3><div class="v">${a.pres}<span class="muted" style="font-size:16px"> / ${E.length}</span></div><div class="s">${a.abs} absent · ${a.lv} on leave</div></div>
+   <div class="card kpi" tabindex="0"${T('Days present ÷ working days with a record, over the range you picked. Sundays are excluded.')}><h3>Attendance, ${span(r)}</h3><div class="v">${(()=>{const s=agg(E,0,r-1,1);return pc(s.days?s.pres/s.days:0,1)})()}</div><div class="s">Working days only, Sundays excluded</div></div></div>
+  <div class="grid g4" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))">${grp}</div>
+  <p class="note">Green name = present today · amber = on leave · red = absent or not marked yet. Hover a name for the exact status.</p>
+  <div class="grid g2"><div class="card"><h3>Most present</h3><div class="cmp">${best.map(o=>li(o,0)).join('')}</div></div><div class="card"><h3>Most days off</h3><div class="cmp">${worst.map(o=>li(o,1)).join('')}</div></div></div>
+  <div class="card"><h3>Attendance rate per day</h3>${lineChart({labels,series,ymin:0,ymax:100,h:240,yFmt:v=>Math.round(v)+'%',aria:'Attendance rate per day'})}</div>`;
+}
+
+/* ---- Admin: staff, teams and who can sign in ---- */
+/* The TV board: an admin makes a secret link and opens it on the TV's browser. See server/tv.js for what it shows. */
+function tvCard(){
+  const link=S.tvLink||'';
+  return`<div class="card"><h3${T('A big screen on the floor. It shows each team and telecaller their logins, calls and score. No rupee amounts, customers or remarks.')}>TV display</h3>
+  <p class="note">Open the link on the TV’s browser to show the scores to the floor. Anyone with the link can see the board, so keep it private. Making a new link switches the old one off.</p>
+  ${link?`<div class="form" style="margin-top:10px"><label style="flex:1 1 320px">Link for the TV<input id="tvlink" readonly value="${esc(link)}" style="width:100%" onclick="this.select()"></label><button class="btn pri" data-act="tv-copy">Copy link</button></div>`:''}
+  <div class="form" style="margin-top:10px"><button class="btn" data-act="tv-new"${S.busy?' disabled':''}>${link?'Make a new link':'Make a TV link'}</button><button class="btn dng" data-act="tv-off"${S.busy?' disabled':''}>Switch the TV off</button></div></div>`;
+}
+function vSetup(){
+  const nums=ALLROWS.map(e=>{const m=String(e.emp_code).match(/(\d+)$/);return m?+m[1]:0});
+  const nextCode='EMP'+String(1+Math.max(0,...nums)).padStart(3,'0');
+  const teamOpts=TEAMS.map((t,i)=>`<option value="${t.id}">${esc(t.n)}${t.l?' ('+esc(t.l)+')':''}</option>`).join('');
+  const dis=S.busy?' disabled':'';
+  const accRows=ACCESS.map(a=>{const t=TEAMS.find(x=>x.id===a.team_id);const me=SESSION&&SESSION.user&&SESSION.user.email;const active=a.status==='ACTIVE';
+    return`<tr${active?'':' class="muted"'}><td>${esc(a.email)}</td><td>${esc(a.name||'')}</td><td>${a.role==='ADMIN'?'Admin':'Team leader'}</td><td>${a.role==='ADMIN'?'All teams':esc(t?t.n:a.team_id)}</td><td>${active?'<span class="pill p">Active</span>':'<span class="pill a">Removed</span>'}</td><td class="r">${active?(S.confirm==='acc:'+a.email?`<button class="btn dng" data-act="accrev" data-v="${esc(a.email)}"${dis}>Confirm remove</button> <button class="btn" data-act="rmno">Cancel</button>`:`<button class="btn" data-act="accrev" data-v="${esc(a.email)}"${dis}${me&&a.email.toLowerCase()===String(me).toLowerCase()?' disabled data-tip="This is you. You cannot remove your own access."':''}>Remove access</button>`):''}</td></tr>`}).join('');
+  return`<div class="head"><div><h2>Staff and access</h2><p>Admin only. Decide who can sign in, which team each team leader sees, and who works on which team.</p></div></div>
+  ${S.msg?`<div class="card"><p class="msg" role="status" style="margin:0">${esc(S.msg)}</p></div>`:''}
+  ${tvCard()}
+  <div class="card"><h3${T('Only the Gmail / Google accounts listed here can open the app. Each team leader sees only the team you choose for them.')}>Who can sign in</h3>
+   <div class="form"><label>Google email<input id="a-email" type="email" placeholder="name@gmail.com" size="26" autocomplete="off"></label><label>Name (optional)<input id="a-name" placeholder="Their name" size="16"></label>
+    <label${T('Admin sees everything. Team leader sees only their own team in detail, plus totals for all teams.')}>Role<select id="a-role"><option value="TL">Team leader</option><option value="ADMIN">Admin</option></select></label>
+    <label${T('Which team this team leader will see. Not needed for admins.')}>Team<select id="a-team">${teamOpts}</select></label>
+    <button class="btn pri" data-act="accset"${dis}${T('Give this Google account access. If the email is already listed, this updates their role or team.')}>Give access</button></div>
+   <p class="note" style="margin-top:8px">Use the exact Google account the person will sign in with. Gmail dots and + tags are ignored. Re-adding an email with a different team moves that leader to the new team.</p>
+   <div class="tw" style="margin-top:10px"><table><thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Sees</th><th>Status</th><th>&nbsp;</th></tr></thead><tbody>${accRows||'<tr><td colspan="6" class="muted">No access rows yet.</td></tr>'}</tbody></table></div></div>
+  <div class="grid g2"><div class="card"><h3>Add a team</h3><div class="form"><label>Team name<input id="tm-name" placeholder="e.g. Sunrise" size="14"></label><label>Team leader name<input id="tm-lead" placeholder="Full name" size="16"></label><button class="btn pri" data-act="teamadd"${dis}>Add team</button></div>
+    <p class="note" style="margin-top:8px">After adding a team, give its leader's Google account access on the left.</p></div>
+   <div class="card"><h3>Add a telecaller</h3><div class="form"><label${T('A unique ID, used in the Google Sheet. The next free one is filled in for you.')}>Employee code<input id="n-code" value="${nextCode}" size="9"></label><label>Name<input id="n-name" placeholder="Full name" size="18"></label>
+   <label>Team<select id="n-team">${teamOpts}</select></label><button class="btn pri" data-act="add"${dis}>Add</button></div></div></div>
+  <div class="card"><h3>Active staff, ${act().length}</h3><div class="tw"><table><thead><tr>${th('code','Code')}<th>Name</th>${th('team','Team')}<th>&nbsp;</th></tr></thead><tbody>${act().map(e=>`<tr><td class="n">${esc(e.code)}</td><td>${esc(e.name)}</td><td>${teamDot(e.team)}${esc(TEAMS[e.team].n)}</td><td class="r">${S.confirm===e.code?`<button class="btn dng" data-act="rm" data-v="${esc(e.code)}"${dis}>Confirm remove</button> <button class="btn" data-act="rmno">Cancel</button>`:`<button class="btn" data-act="rm" data-v="${esc(e.code)}"${dis}${T('Marks the person as left. Their past numbers stay in every total.')}>Remove</button>`}</td></tr>`).join('')}</tbody></table></div>
+   <p class="note" style="margin-top:8px">${DEMO?'Demo mode: changes last until you reload.':'Changes are written straight to your Google Sheet. Removing marks someone as LEFT; nothing is deleted.'}</p></div>`;
+}
+
+/* ---- Help: the complete guide ---- */
+function vHelp(){
+  const A=S.role==='admin',D=DEMO;
+  return`<div class="head"><div><h2>How to use Floor Pulse</h2><p>Plain-English guide. Hover (or tap on a phone) any number, title or coloured box to see what it means.</p></div></div>
+  <div class="card help"><h3>Start here</h3>
+   <p>Floor Pulse shows how your telecallers are doing: who came in, how many cases (logins) they logged, how many calls they made, and how much money was disbursed. Everything comes from your Google Sheet and refreshes by itself every ${CFG.REFRESH_MIN} minutes.</p>
+   <ol><li>Open the app and sign in with your Google account.</li><li>Look at <b>Live</b> to see how today is going.</li><li>Use <b>Day view</b> to open any past date.</li><li>Use the menu on the left (☰ on a phone) to move between pages. Click a group name to open or close it.</li><li>Hover anything you do not understand. A small note explains it.</li></ol></div>
+  <div class="card help"><h3>What each tab shows</h3><dl>
+   <dt>Live</dt><dd>Today, right now: who is present, cases logged against target, calls, rupees disbursed, and the efficiency score.${A?'':' It also shows your team’s position among all teams.'}</dd>
+   <dt>Day view</dt><dd>Pick any date and see that one day only: attendance, calls, every case stage and the rupees disbursed, for each person. Use the ◀ ▶ buttons to move between working days.</dd>
+   ${A?'<dt>Teams</dt><dd>All teams side by side with the same scoring, so the comparison is fair.</dd>':'<dt>All teams</dt><dd>How every team is doing and where yours stands. You see team totals only. Other teams’ people stay private.</dd>'}
+   <dt>Telecallers</dt><dd>One row per person with cases, stages, rupees disbursed and score. Click a column title to sort. Click a row to open their detail.</dd>
+   <dt>Pipeline</dt><dd>The path of a customer: called, connected, logged in, then pending, approved, rejected or disbursed. Also the month-to-date rupees and a projection for month end.</dd>
+   <dt>Logins</dt><dd>Cases logged in for every telecaller, team by team, with approved, rejected, pending and disbursed counts and the last seven working days.</dd><dt>Calls report</dt><dd>Calls, connected calls, connect rate, talk time (shown as h:m:s, for example 2h:25m:40s) and average call length, team by team.</dd>
+   <dt>Trends</dt><dd>Lines over time with a dashed forecast. Choose what to plot and for whom.</dd>
+   <dt>Attendance</dt><dd>Who is in today, who is in most, who takes the most leave.</dd>
+   <dt>Targets</dt><dd>Each telecaller has their own rupee target for the month (for example ₹16 lakh or ₹20 lakh), and each team has its own too. You see rupees disbursed so far, the percentage reached, and whether they are ahead or behind where the month should be today.${A?' Type amounts as 16L, 16 lakh, 1.5cr or 1600000, then press Save targets. A team target is the total of its members unless you type one for the team.':' Only your admin can change targets.'}</dd>
+   <dt>Cases</dt><dd>Every customer case from the last 14 days: customer name, bank, amount and stage. A case that has not changed stage for ${STUCK} days is marked Stuck, and the page lists who to ask and about which customer. Update a stage or write why a case is stuck on the same row. Click a telecaller on the Telecallers tab to see only their cases, day by day.</dd>
+   ${A?'<dt>Remarks</dt><dd>Admin only. Record behaviour on the floor such as dress code, chewing gum or late coming. Remarks appear on that person’s detail panel. Team leaders cannot see them.</dd><dt>Employee directory</dt><dd>Admin only. Personal details, ID numbers, bank details, salary, joining and exit dates for everyone. Open a person to see or edit it. PAN, Aadhaar, account number and salary stay hidden until you press Show. Every open and save is logged.</dd><dt>App users</dt><dd>Admin only. Which team leaders and admins have signed in, from which phone or computer, whether they use the installed app or a browser tab, and when they were last online.</dd>':''}
+   ${A?'<dt>Staff and access</dt><dd>Decide which Google accounts can sign in and which team each team leader sees. Add teams and telecallers.</dd>':''}</dl></div>
+  <div class="card help"><h3>Reading the numbers</h3><dl>
+   <dt>Case / login</dt><dd>One customer file submitted. “Cases logged in” and “logins” mean the same thing.</dd>
+   <dt>Stages</dt><dd><b>Pending</b> = waiting for the lender. <b>Approved</b> = lender said yes. <b>Rejected</b> = lender said no. <b>Disbursed</b> = money paid out.</dd>
+   <dt>Disbursed ₹</dt><dd>Total rupees paid out. <b>L</b> means lakh (1,00,000) and <b>Cr</b> means crore (1,00,00,000). Hover to see the full figure.</dd>
+   <dt>Target</dt><dd>Every person marked Present adds ${PL} cases and ${PC} calls to the day’s target. Someone absent adds nothing, so targets always match who actually came.</dd>
+   <dt>Thin black line</dt><dd>On a progress bar it shows where the day <i>should</i> be by now. Bar past the line = ahead of pace.</dd>
+   <dt>Efficiency score</dt><dd>One number out of 100. 45% cases logged against target, 30% calls against target, 15% connect rate against ${pc(CONN_BM)}, 10% disbursed share against ${pc(DISB_BM)}. Measured against the time of day, so a morning score is fair. Above 80 is strong, below 50 needs attention.</dd>
+   <dt>Connect rate</dt><dd>Connected calls ÷ all calls. Red when it is below ${pc(CONN_BM)}.</dd>
+   <dt>▲ green / ▼ red</dt><dd>Up or down compared with before. It is never a verdict by itself; look at the cases and attendance behind it.</dd>
+   <dt>Dashed line</dt><dd>A straight-line guess from the recent trend. A guide only.</dd>
+   <dt>Small coloured squares</dt><dd><span class="sw" style="background:var(--up)"></span>Present, <span class="sw" style="background:var(--down)"></span>Absent, <span class="sw" style="background:var(--accent)"></span>Leave, empty: no record (Sunday or not entered). Hover a square for the name or date.</dd>
+   <dt>Coloured dot by a name</dt><dd>The team colour. Hover it for the team and leader.</dd>
+   <dt>7d / 30d / 60d</dt><dd>How far back the page looks, counted from today.</dd></dl></div>
+  ${A||D?`<div class="card help"><h3>For admins</h3>
+   <p><b>Each day:</b> open Live in the morning to check attendance and pace; open Teams or Pipeline in the evening for the result; use Day view to look at any date.</p>
+   <p><b>Give someone access:</b> Staff and access → “Who can sign in” → type their Google email, choose Team leader or Admin, choose the team → Give access. They can sign in at once. To change a leader’s team, add the same email again with the new team.</p>
+   <p><b>Take access away:</b> Remove access next to their email. They are signed out on their next refresh and cannot sign in again.</p>
+   <p><b>New team:</b> Add a team (name and leader), then give the leader’s Google account access. <b>New telecaller:</b> Add a telecaller and pick their team. <b>Someone leaves:</b> Remove. Their past numbers stay in the totals.</p>
+   <p><b>Targets:</b> change <code>per_head_logins</code>, <code>per_head_calls</code> and the benchmarks in the app database (ask your technical person).</p></div>`:''}
+  ${!A||D?`<div class="card help"><h3>For team leaders</h3>
+   <p><b>Each day:</b> check Attendance first: targets depend on who is present. Watch Live through the day. Open a telecaller’s row to see what they are strong and weak at.</p>
+   <p><b>Your position:</b> Live shows your rank today. The All teams tab ranks every team over 7, 30 or 60 days, with team totals, rupees disbursed and leader names. You never see another team’s people or individual numbers.</p>
+   <p><b>Past dates:</b> Day view lets you open any date within the last 60 days.</p></div>`:''}
+  <div class="card help"><h3>Where the numbers come from</h3>
+   <p>Attendance, logins, calls and the efficiency log live in the Google Sheet; everything else is in the app database. <b>Attendance</b> must be entered for the day, because targets are built from it. <b>KPI_MIS</b> and <b>Calls_MIS</b> hold one row per person per day; your backend should overwrite that row as numbers change rather than adding a new one. Efficiency scores are saved to <b>Efficiency_Log</b> every 10 minutes by the sheet itself.</p></div>
+  <div class="card help"><h3>If something looks wrong</h3><dl>
+   <dt>“Not been given access”</dt><dd>Your Google account is not on the list. Ask your admin to add that exact email. If you have several Google accounts, sign out and pick the right one.</dd>
+   <dt>Everything shows 0</dt><dd>Attendance for the day has not been entered yet, or the sheet has no rows for today. Check the Attendance tab.</dd>
+   <dt>Numbers look old</dt><dd>Press Refresh (top right). If the line there says offline, the app is showing the last saved data.</dd>
+   <dt>Signed out suddenly</dt><dd>Sessions last 7 days, and access is checked every time. If your access was removed or changed you are asked to sign in again.</dd>
+   <dt>Install on a phone</dt><dd>Android Chrome: menu → Install app. iPhone Safari: Share → Add to Home Screen.</dd></dl></div>`;
+}
+
+/* ============ v2: targets, remarks, cases, employee directory, app users ============ */
+const STAGES=['LOGIN','PENDING','QUERY','APPROVED','REJECTED','DISBURSED','NOT_INTERESTED'];
+const STAGE_LBL={LOGIN:'Logged in',PENDING:'Pending',QUERY:'Query raised',APPROVED:'Approved',REJECTED:'Rejected',DISBURSED:'Disbursed',NOT_INTERESTED:'Customer not interested'};
+const STAGE_CLS={DISBURSED:'p',APPROVED:'p',REJECTED:'a',NOT_INTERESTED:'a',PENDING:'l',QUERY:'l',LOGIN:''};
+const CLOSED=['REJECTED','DISBURSED','NOT_INTERESTED'];
+const REMARK_CATS=['Dress code','Chewing gum / eating on the floor','Late coming','Mobile phone use','Rude or improper language','Not following instructions','Leaving seat / long breaks','Other'];
+const STATUSES=['ACTIVE','PROBATION','NOTICE','LEFT'];
+const STATUS_LBL={ACTIVE:'Active',PROBATION:'Probation',NOTICE:'Notice period',LEFT:'Left'};
+const BANKS=['HDFC Bank','ICICI Bank','Axis Bank','State Bank of India','Kotak Mahindra Bank','IDFC First Bank','Bajaj Finance','Tata Capital','IndusInd Bank','Yes Bank'];
+/* every directory field: [key, label, input type, section, choices] */
+const DF=[
+ ['full_name','Full name (as per Aadhaar / PAN)','text','Personal'],['dob','Date of birth','date','Personal'],
+ ['gender','Gender','sel','Personal',['Male','Female','Other']],['marital_status','Marital status','sel','Personal',['Single','Married','Divorced','Widowed']],
+ ['blood_group','Blood group (optional)','sel','Personal',['A+','A-','B+','B-','AB+','AB-','O+','O-']],
+ ['father_name','Father’s name','text','Family and emergency'],['mother_name','Mother’s name','text','Family and emergency'],
+ ['emergency_name','Emergency contact name','text','Family and emergency'],['emergency_phone','Emergency contact number','tel','Family and emergency'],
+ ['mobile','Personal mobile number','tel','Contact'],['email','Personal email ID','email','Contact'],['address','Permanent address','text','Contact'],
+ ['pan','PAN number','text','Identity'],['aadhaar','Aadhaar number','text','Identity'],
+ ['bank_name','Bank name','text','Bank'],['account_holder','Account holder name (must match PAN)','text','Bank'],['account_no','Account number','text','Bank'],['ifsc','IFSC code','text','Bank'],['bank_branch','Branch name','text','Bank'],
+ ['designation','Designation','text','Job'],['salary','Monthly salary (₹)','text','Job']];
+let SYNC=null,SYNC_ON=false,CASES=[],CNOTES=[],TARGETS=[],TTARGETS=[],REMARKS=[],DEVICES=[],DIR=[],DIRBUSY=false,DIRLOADED=false,STUCK=3;
+Object.assign(S,{tmonth:'',tdraft:{},rfcat:'',rfemp:'',rEmp:'',cEmp:'',cStage:'',cDay:'',cStuck:false,addCase:false,dirQ:'',dirStatus:'',dirTeam:'',dirSel:null,dirEdit:false,dd:null,reveal:false,dirErr:''});
+
+const curMonth=()=>ymd(TODAY).slice(0,7);
+const monthLbl=m=>MON[+m.slice(5,7)-1]+' '+m.slice(0,4);
+const shiftMonth=(m,n)=>ymd(new Date(+m.slice(0,4),+m.slice(5,7)-1+n,1)).slice(0,7);
+const dfull=s=>{const m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})/);return m?(+m[3])+' '+MON[+m[2]-1]+' '+m[1]:''};
+const codeSet=()=>new Set(scopeAll().map(e=>e.code));
+const nameOf=c=>{const e=EMPS.find(x=>x.code===c);if(e)return e.name;const r=ALLROWS.find(x=>String(x.emp_code)===c);return r?r.name:c};
+const amtTxt=n=>n?(n%1e5===0?(n/1e5)+'L':String(n)):'';
+const parseAmt=t=>{const s=String(t==null?'':t).toLowerCase().replace(/[₹,\s]/g,'');if(!s)return null;const m=s.match(/^(\d*\.?\d+)(k|l|lac|lacs|lakh|lakhs|cr|crore|crores)?$/);if(!m)return NaN;let n=parseFloat(m[1]);const u=m[2];if(u==='k')n*=1e3;else if(u&&u[0]==='l')n*=1e5;else if(u)n*=1e7;return Math.round(n)};
+const mask=(v,keep)=>v?'•'.repeat(Math.max(0,String(v).length-keep))+String(v).slice(-keep):'';
+const normMail=e=>{e=String(e||'').toLowerCase();const at=e.lastIndexOf('@');if(at<1)return e;let u=e.slice(0,at),d=e.slice(at+1);if(d==='gmail.com'||d==='googlemail.com'){u=u.split('+')[0].replace(/\./g,'');d='gmail.com'}return u+'@'+d};
+const msgBox=()=>S.msg?`<div class="card"><p class="msg" role="status" style="margin:0">${esc(S.msg)}</p></div>`:'';
+const stampNow=()=>ymd(TODAY)+' '+hhmm(S.min);
+
+/* ---- device info sent with sign-in and data calls ---- */
+function deviceInfo(){
+  let id='';try{id=localStorage.getItem('fp-device')||'';if(!id){id='d'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);localStorage.setItem('fp-device',id)}}catch(x){id='t'+Math.random().toString(36).slice(2,12)}
+  const ua=navigator.userAgent||'';let os='Other';
+  if(/Android/i.test(ua))os='Android';else if(/iPhone|iPad|iPod/i.test(ua))os='iOS';else if(/Windows/i.test(ua))os='Windows';else if(/Mac OS X|Macintosh/i.test(ua))os='macOS';else if(/CrOS/.test(ua))os='ChromeOS';else if(/Linux/i.test(ua))os='Linux';
+  const mm=ua.match(/Android [\d.]+; ([^;)]+)/),model=mm&&mm[1].trim().length>1&&!/^K$/.test(mm[1].trim())?mm[1].trim():'';
+  let br='Browser';const bs=[[/Edg\/(\d+)/,'Edge'],[/OPR\/(\d+)/,'Opera'],[/SamsungBrowser\/(\d+)/,'Samsung Internet'],[/CriOS\/(\d+)/,'Chrome'],[/FxiOS\/(\d+)/,'Firefox'],[/Firefox\/(\d+)/,'Firefox'],[/Chrome\/(\d+)/,'Chrome'],[/Version\/(\d+).*Safari/,'Safari']];
+  for(const [re,n] of bs){const m=ua.match(re);if(m){br=n+' '+m[1];break}}
+  const installed=!!((window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone);
+  return{id,label:(os+(model?' '+model:'')+' · '+br).slice(0,60),mode:installed?'Installed app':'Browser tab',platform:os};
+}
+
+/* ---- targets ---- */
+const tEmp=(c,m)=>{const t=TARGETS.find(x=>x.scope==='EMP'&&x.id===c&&x.month===m);return t?t.amount:0};
+const tTeamSet=(id,m)=>{const t=TARGETS.find(x=>x.scope==='TEAM'&&x.id===id&&x.month===m);return t?t.amount:0};
+const tTeam=(id,m)=>{const t=TTARGETS.find(x=>x.team_id===id&&x.month===m);return t?t.amount:0};
+function applyTarget(sc,id,m,amt){TARGETS=TARGETS.filter(x=>!(x.scope===sc&&x.id===id&&x.month===m));if(amt)TARGETS.push({scope:sc,id,month:m,amount:amt})}
+function recomputeTT(){
+  const months=[...new Set(TARGETS.map(t=>t.month))];TTARGETS=[];
+  TEAMS.forEach(tm=>months.forEach(m=>{const set=tTeamSet(tm.id,m);let sum=0;
+    ALLROWS.forEach(r=>{if(r.role==='TELECALLER'&&r.status!=='LEFT'&&String(r.team_id)===tm.id)sum+=tEmp(String(r.emp_code),m)});
+    if(set)TTARGETS.push({team_id:tm.id,month:m,amount:set,source:'set'});else if(sum)TTARGETS.push({team_id:tm.id,month:m,amount:sum,source:'sum'})}));
+}
+function monthAmt(emps,m){let t=0;for(let i=0;i<DAYS;i++){if(ymd(dateOf(i)).slice(0,7)===m)t+=agg(emps,i,i,1).amt}return t}
+function monthAmtTeam(ti,m){let t=0;for(let i=0;i<DAYS;i++){if(ymd(dateOf(i)).slice(0,7)===m)t+=teamAgg(ti,i,i,1).amt}return t}
+function pace(m){const cm=curMonth();if(m<cm)return 1;if(m>cm)return 0;const y=+m.slice(0,4),mo=+m.slice(5,7)-1,dim=new Date(y,mo+1,0).getDate();let tot=0,el=0;
+  for(let d=1;d<=dim;d++){if(new Date(y,mo,d).getDay()===0)continue;tot++;if(d<TODAY.getDate())el++;else if(d===TODAY.getDate())el+=F()}return tot?el/tot:0}
+function progress(ach,tg,pz){if(!tg)return{pct:0,cls:'',lbl:'No target'};const p=ach/tg;if(p>=1)return{pct:p,cls:'p',lbl:'Target met'};if(p>=pz)return{pct:p,cls:'p',lbl:'Ahead'};if(p>=pz*.85)return{pct:p,cls:'l',lbl:'On track'};return{pct:p,cls:'a',lbl:'Behind'}}
+const paceBar=(ach,tg,pz)=>`<div class="pace"${T('The bar is the target. The thin line is where the month should be by today ('+pc(pz)+').')}>${bar(ach,tg,ach/tg>=pz?'var(--up)':ach/tg>=pz*.85?'var(--accent)':'var(--down)')}<s style="left:${Math.min(100,pz*100).toFixed(1)}%"></s></div>`;
+
+function vTargets(){
+  const A=S.role==='admin',m=S.tmonth||curMonth(),cm=curMonth(),pz=pace(m),dr=S.tdraft[m]||{},dis=S.busy?' disabled':'';
+  const E=scope().slice().sort((a,b)=>a.team-b.team||a.name.localeCompare(b.name));
+  const rows=E.map(e=>{const tg=tEmp(e.code,m),ach=monthAmt([e],m);return{e,tg,ach,pr:progress(ach,tg,pz)}});
+  const tr=TEAMS.map((t,i)=>{const tg=tTeam(t.id,m),ach=monthAmtTeam(i,m);return{t,i,tg,ach,set:tTeamSet(t.id,m),pr:progress(ach,tg,pz)}}).filter(o=>A||o.i===S.tl||o.tg);
+  const mine=A?tr:tr.filter(o=>o.i===S.tl);
+  const totT=mine.reduce((s,o)=>s+o.tg,0),totA=mine.reduce((s,o)=>s+o.ach,0),tp=progress(totA,totT,pz);
+  const inp=(k,val,ph,lab)=>`<input class="tin" data-k="${k}" size="9" value="${esc(dr[k]!==undefined?dr[k]:val)}" placeholder="${ph}" aria-label="${esc(lab)}" autocomplete="off">`;
+  const kpi=`<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+   <div class="card kpi sm"><h3>${A?'Branch':'Team'} target</h3><div class="v">${totT?inrC(totT):'—'}</div><div class="s">${monthLbl(m)}</div></div>
+   <div class="card kpi sm"><h3>Disbursed so far</h3><div class="v">${inrC(totA)}</div><div class="s">${totT?pc(tp.pct)+' of target':'no target set'}</div></div>
+   <div class="card kpi sm"><h3>Still to go</h3><div class="v">${totT?inrC(Math.max(0,totT-totA)):'—'}</div><div class="s">${m===cm?'Should be at '+pc(pz)+' by today':m<cm?'Month closed':'Not started'}</div></div></div>`;
+  return`<div class="head"><div><h2>Targets</h2><p>${A?'Set a rupee target for every telecaller each month. A team’s target is the total of its members unless you type one for the team.':'Your team’s monthly targets and how each person is doing. Only your admin can change targets.'}</p></div>
+   <div class="form"><button class="btn" data-act="x-tm" data-v="-1">◀</button><b style="min-width:92px;text-align:center">${monthLbl(m)}</b><button class="btn" data-act="x-tm" data-v="1"${m>=shiftMonth(cm,1)?' disabled':''}>▶</button></div></div>
+  ${msgBox()}${kpi}
+  <div class="card"><h3>Teams</h3><div class="tw"><table><thead><tr><th>Team</th><th class="r">Target</th><th class="r">Disbursed</th><th class="r">% of target</th><th>Progress</th><th class="r">Still to go</th><th>Status</th>${A?`<th${T('Optional. Leave blank to use the total of the members’ targets.')}>Team target (optional)</th>`:''}</tr></thead><tbody>
+   ${tr.map(o=>`<tr><td>${teamDot(o.i)}<b>${esc(o.t.n)}</b> <span class="muted">${esc(o.t.l)}</span></td><td class="r n">${o.tg?inrC(o.tg):'—'}${o.tg&&TTARGETS.find(x=>x.team_id===o.t.id&&x.month===m).source==='set'?' <span class="pill"'+T('This team has its own target. It is not the total of its members.')+'>set</span>':''}</td><td class="r n">${inrC(o.ach)}</td><td class="r n">${o.tg?pc(o.pr.pct):'—'}</td><td style="min-width:120px">${o.tg?paceBar(o.ach,o.tg,pz):''}</td><td class="r n">${o.tg?inrC(Math.max(0,o.tg-o.ach)):''}</td><td><span class="pill ${o.pr.cls}">${o.pr.lbl}</span></td>${A?`<td>${inp('TEAM|'+o.t.id,amtTxt(o.set),'blank = total','Team target for '+o.t.n)}</td>`:''}</tr>`).join('')||'<tr><td colspan="8" class="muted">No teams yet.</td></tr>'}</tbody></table></div></div>
+  <div class="card"><div class="head" style="margin:0 0 8px"><h3>${A?'Telecallers':'Your telecallers'}</h3>${A?`<div class="form"><button class="btn" data-act="x-tcopy"${dis}${T('Fill empty boxes with last month’s targets. Nothing is saved until you press Save targets.')}>Copy from ${monthLbl(shiftMonth(m,-1))}</button><button class="btn pri" data-act="x-tsave"${dis}>Save targets</button></div>`:''}</div>
+   ${A?'<p class="note" style="margin:0 0 8px">Type the amount as 1600000, 16L, 16 lakh or 1.5cr. Empty clears the target. Press Save targets when done.</p>':''}
+   <div class="tw"><table><thead><tr><th>Telecaller</th><th class="r">Target</th><th class="r">Disbursed</th><th class="r">% of target</th><th>Progress</th><th class="r">Still to go</th><th>Status</th></tr></thead><tbody>
+   ${rows.map(o=>`<tr><td>${teamDot(o.e.team)}<b>${esc(o.e.name)}</b> <span class="muted n">${o.e.code}</span></td><td class="r n">${A?inp('EMP|'+o.e.code,amtTxt(o.tg),'e.g. 16L','Target for '+o.e.name):(o.tg?inrC(o.tg):'—')}</td><td class="r n">${inrC(o.ach)}</td><td class="r n">${o.tg?pc(o.pr.pct):'—'}</td><td style="min-width:120px">${o.tg?paceBar(o.ach,o.tg,pz):''}</td><td class="r n">${o.tg?inrC(Math.max(0,o.tg-o.ach)):''}</td><td><span class="pill ${o.pr.cls}">${o.pr.lbl}</span></td></tr>`).join('')}</tbody></table></div>
+   <p class="note" style="margin-top:8px">Disbursed = rupees disbursed in ${monthLbl(m)} from the daily numbers. Ahead / On track / Behind compares each person with where the month should be today (${pc(pz)}).</p></div>`;
+}
+function saveTargets(){
+  const m=S.tmonth||curMonth(),dr=S.tdraft[m]||{},items=[];let bad='';
+  Object.keys(dr).forEach(k=>{const [sc,id]=k.split('|'),cur=sc==='EMP'?tEmp(id,m):tTeamSet(id,m),raw=String(dr[k]).trim(),v=raw===''?'':parseAmt(raw);
+    if(v!==''&&(!isFinite(v)||v<0)){bad=bad||'Check the amount typed for '+(sc==='EMP'?nameOf(id):'team '+id)+'.';return}
+    if((v===''?0:v)===cur)return;items.push({scope:sc,id,amount:v})});
+  if(bad){S.msg=bad;render();return}
+  if(!items.length){S.msg='Nothing has changed.';render();return}
+  adminDo('target_set',{month:m,items},()=>{items.forEach(it=>applyTarget(it.scope,it.id,m,it.amount===''?0:it.amount));recomputeTT();delete S.tdraft[m];return'Targets saved for '+monthLbl(m)+'.'},async()=>{delete S.tdraft[m]});
+}
+
+/* ---- remarks (admin only) ---- */
+function vRemarks(){
+  const dis=S.busy?' disabled':'',people=ALLROWS.filter(r=>r.status!=='LEFT').slice().sort((a,b)=>String(a.name).localeCompare(String(b.name)));
+  const opts=(sel)=>people.map(r=>`<option value="${esc(r.emp_code)}"${String(r.emp_code)===sel?' selected':''}>${esc(r.name)} (${esc(r.emp_code)}${r.role==='TL'?' · team leader':''})</option>`).join('');
+  let list=REMARKS.filter(r=>(!S.rfcat||r.category===S.rfcat)&&(!S.rfemp||r.emp_code===S.rfemp)).sort((a,b)=>b.date.localeCompare(a.date)||String(b.created_at).localeCompare(String(a.created_at)));
+  const cnt={};REMARKS.forEach(r=>{cnt[r.category]=(cnt[r.category]||0)+1});
+  const per={};REMARKS.forEach(r=>{per[r.emp_code]=(per[r.emp_code]||0)+1});
+  const top=Object.keys(per).sort((a,b)=>per[b]-per[a]).slice(0,5);
+  return`<div class="head"><div><h2>Remarks</h2><p>Admin only. Note down behaviour on the floor: dress code, chewing gum, late coming and so on. Team leaders and telecallers cannot see these.</p></div></div>${msgBox()}
+  <div class="card"><h3>Give a remark</h3><div class="form">
+   <label>Employee<select id="rm-emp"><option value="">Choose…</option>${opts(S.rEmp)}</select></label>
+   <label>What happened<select id="rm-cat"><option value="">Choose…</option>${REMARK_CATS.map(c=>`<option>${esc(c)}</option>`).join('')}</select></label>
+   <label>Date<input type="date" id="rm-date" value="${ymd(TODAY)}" max="${ymd(TODAY)}"></label>
+   <label>Details (optional)<input id="rm-note" size="36" maxlength="300" placeholder="e.g. came in shorts, told to go home and change" autocomplete="off"></label>
+   <button class="btn pri" data-act="x-remadd"${dis}>Save remark</button></div></div>
+  <div class="grid g2"><div class="card"><h3>By type</h3>${REMARK_CATS.filter(c=>cnt[c]).map(c=>`<div class="row" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0"><span>${esc(c)}</span><b class="n">${cnt[c]}</b></div>`).join('')||'<p class="muted">No remarks yet.</p>'}</div>
+   <div class="card"><h3>Most remarks</h3>${top.map(c=>`<div class="row" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0"><span>${esc(nameOf(c))} <span class="muted n">${esc(c)}</span></span><b class="n">${per[c]}</b></div>`).join('')||'<p class="muted">Nobody yet.</p>'}</div></div>
+  <div class="card"><div class="head" style="margin:0 0 8px"><h3>All remarks, ${list.length}</h3><div class="form">
+   <label>Type<select id="rm-fcat"><option value="">All types</option>${REMARK_CATS.map(c=>`<option${S.rfcat===c?' selected':''}>${esc(c)}</option>`).join('')}</select></label>
+   <label>Employee<select id="rm-femp"><option value="">Everyone</option>${opts(S.rfemp)}</select></label></div></div>
+   <div class="tw"><table><thead><tr><th>Date</th><th>Employee</th><th>Type</th><th>Details</th><th>Given by</th><th>&nbsp;</th></tr></thead><tbody>
+   ${list.map(r=>`<tr><td class="n">${dfull(r.date)}</td><td><b>${esc(nameOf(r.emp_code))}</b> <span class="muted n">${esc(r.emp_code)}</span></td><td>${esc(r.category)}</td><td>${esc(r.note)}</td><td class="muted">${esc(r.given_by)}</td><td class="r">${S.confirm==='rmk:'+r.remark_id?`<button class="btn dng" data-act="x-rmv" data-v="${esc(r.remark_id)}"${dis}>Confirm withdraw</button> <button class="btn" data-act="rmno">Cancel</button>`:`<button class="btn" data-act="x-rmv" data-v="${esc(r.remark_id)}"${dis}${T('Withdraws the remark. It stays in the sheet marked VOID.')}>Withdraw</button>`}</td></tr>`).join('')||'<tr><td colspan="6" class="muted">No remarks match.</td></tr>'}</tbody></table></div></div>`;
+}
+
+/* ---- cases: customer, bank and stage, last 14 days ---- */
+const caseDays=c=>Math.max(0,dayIdxOf(c.stage_date||c.date));
+const isStuck=c=>!CLOSED.includes(c.stage)&&caseDays(c)>=STUCK;
+const lastNote=id=>{const n=CNOTES.filter(x=>x.case_id===id);return n.length?n[n.length-1]:null};
+const stagePill=s=>`<span class="pill ${STAGE_CLS[s]||''}">${esc(STAGE_LBL[s]||s)}</span>`;
+const myCases=()=>{const cs=codeSet();return CASES.filter(c=>cs.has(c.emp_code))};
+const askLine=c=>`${nameOf(c.emp_code)}: ${c.customer} (${c.bank}) has been ${(STAGE_LBL[c.stage]||c.stage).toLowerCase()} for ${caseDays(c)} days. Why has it not moved?`;
+function caseRows(list,showEmp,cols){
+  const dis=S.busy?' disabled':'',by={};list.forEach(c=>(by[c.date]=by[c.date]||[]).push(c));
+  return Object.keys(by).sort().reverse().map(d=>`<tr class="grp"><td colspan="${cols}">${new Date(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})} · ${by[d].length} case${by[d].length>1?'s':''} · ${inrC(by[d].reduce((s,c)=>s+c.amount,0))}</td></tr>`+by[d].map(c=>{const n=lastNote(c.case_id),dd=caseDays(c);
+   return`<tr>${showEmp?`<td>${esc(nameOf(c.emp_code))}</td>`:''}<td><b>${esc(c.customer)}</b></td><td>${esc(c.bank)}${(c.location||c.rm)?'<br><span class="muted">'+esc([c.location,c.rm?'RM '+c.rm:''].filter(Boolean).join(' · '))+'</span>':''}</td><td class="r n">${c.amount?inrC(c.amount):'—'}</td><td>${stagePill(c.stage)}${isStuck(c)?' <span class="stuck"'+T('Not moved for '+dd+' days. Ask why.')+'>Stuck '+dd+'d</span>':''}${!CLOSED.includes(c.stage)&&!isStuck(c)?'<br><span class="muted">'+(dd?dd+'d in this stage':'moved today')+'</span>':''}</td>
+    <td style="max-width:240px">${c.reason?`<span><b>Bank:</b> ${esc(c.reason)}</span><br>`:''}${n?`<span>${esc(n.note)}</span><br><span class="muted">${esc(n.by)}, ${esc(String(n.date).slice(5,10))}</span>`:(c.reason?'':'<span class="muted">No note yet</span>')}</td>
+    <td style="white-space:nowrap">${c.source==='BACKEND'?'':`<select id="cs-${esc(c.case_id)}" aria-label="Stage">${STAGES.map(s=>`<option value="${s}"${s===c.stage?' selected':''}>${STAGE_LBL[s]}</option>`).join('')}</select> `}<input id="cn-${esc(c.case_id)}" size="16" maxlength="300" placeholder="Reason / note" aria-label="Note" autocomplete="off"> <button class="btn" data-act="x-cmove" data-v="${esc(c.case_id)}"${dis}${T(c.source==='BACKEND'?'The stage comes from the backend sheet. You can add a note here.':'Save the new stage and/or the note.')}>${c.source==='BACKEND'?'Add note':'Update'}</button></td></tr>`}).join('')).join('')||`<tr><td colspan="${cols}" class="muted">No cases in the last 14 days.</td></tr>`;
+}
+const caseHead=(showEmp)=>`<tr>${showEmp?'<th>Telecaller</th>':''}<th>Customer</th><th>Bank</th><th class="r">Amount</th><th>Stage</th><th>Last note</th><th>Update</th></tr>`;
+function followUps(list){
+  const st=list.filter(isStuck).sort((a,b)=>caseDays(b)-caseDays(a));
+  if(!st.length)return'<p class="muted" style="margin:0">Nothing is stuck. Every open case has moved in the last '+STUCK+' days.</p>';
+  return`<ul style="margin:0 0 8px;padding-left:18px">${st.map(c=>`<li><b>${esc(nameOf(c.emp_code))}</b>: ${esc(c.customer)} (${esc(c.bank)}), ${esc((STAGE_LBL[c.stage]||c.stage).toLowerCase())} for <span class="stuck">${caseDays(c)} days</span>. Ask why it has not moved.</li>`).join('')}</ul><button class="btn" data-act="x-copyq">Copy this list to send on WhatsApp</button>`;
+}
+function vCases(){
+  const A=S.role==='admin',dis=S.busy?' disabled':'',all=myCases(),E=scope().slice().sort((a,b)=>a.name.localeCompare(b.name));
+  let list=all.filter(c=>(!S.cEmp||c.emp_code===S.cEmp)&&(!S.cDay||c.date===S.cDay)&&(!S.cStage||(S.cStage==='OPEN'?!CLOSED.includes(c.stage):c.stage===S.cStage))&&(!S.cStuck||isStuck(c)));
+  list=list.sort((a,b)=>b.date.localeCompare(a.date)||nameOf(a.emp_code).localeCompare(nameOf(b.emp_code)));
+  const cnt={};STAGES.forEach(s=>cnt[s]=all.filter(c=>c.stage===s).length);
+  const days=[...new Set(all.map(c=>c.date))].sort().reverse();
+  const per={};all.filter(isStuck).forEach(c=>{per[c.emp_code]=(per[c.emp_code]||0)+1});
+  S._q=all.filter(isStuck).sort((a,b)=>caseDays(b)-caseDays(a)).map(askLine).join('\n');
+  return`<div class="head"><div><h2>Cases</h2><p>Every customer case from the last 14 days: who, which bank, and what stage. Cases that have not moved for ${STUCK} days are flagged so you can ask the telecaller why.</p></div><button class="btn pri" data-act="x-cform">${S.addCase?'Close':'Add a case'}</button></div>${msgBox()}
+  ${S.addCase?`<div class="card"><h3>Add a case</h3><div class="form"><label>Telecaller<select id="ca-emp">${E.map(e=>`<option value="${e.code}"${S.cEmp===e.code?' selected':''}>${esc(e.name)}</option>`).join('')}</select></label>
+   <label>Customer name<input id="ca-cust" size="18" maxlength="80" autocomplete="off"></label><label>Bank<input id="ca-bank" size="16" list="banks" maxlength="60" autocomplete="off"></label><datalist id="banks">${BANKS.map(b=>`<option value="${b}">`).join('')}</datalist>
+   <label>Amount<input id="ca-amt" size="9" placeholder="5L or 500000" autocomplete="off"></label>
+   <label>Stage<select id="ca-stage">${STAGES.map(s=>`<option value="${s}">${STAGE_LBL[s]}</option>`).join('')}</select></label><button class="btn pri" data-act="x-cadd"${dis}>Add case</button></div>
+   <p class="note" style="margin-top:8px">${DEMO?'Demo mode: changes last until you reload.':'Saved to the Cases tab of your Google Sheet. Your backend can also fill that tab.'}</p></div>`:''}
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"><div class="card kpi sm"><h3>Cases, 14 days</h3><div class="v">${all.length}</div><div class="s">${inrC(all.reduce((s,c)=>s+c.amount,0))} in value</div></div>
+   <div class="card kpi sm"><h3>Stuck</h3><div class="v ${all.some(isStuck)?'dn':''}">${all.filter(isStuck).length}</div><div class="s">no movement for ${STUCK}+ days</div></div>
+   ${['PENDING','QUERY','APPROVED','DISBURSED','REJECTED','NOT_INTERESTED'].map(s=>`<div class="card kpi sm"><h3>${STAGE_LBL[s]}</h3><div class="v">${cnt[s]}</div><div class="s">cases</div></div>`).join('')}</div>
+  <div class="card"><h3>Ask these telecallers</h3>${followUps(all)}</div>
+  <div class="card"><div class="head" style="margin:0 0 8px"><h3>All cases, ${list.length}</h3><div class="form">
+   <label>Telecaller<select id="c-emp"><option value="">Everyone</option>${E.map(e=>`<option value="${e.code}"${S.cEmp===e.code?' selected':''}>${esc(e.name)}${per[e.code]?' ('+per[e.code]+' stuck)':''}</option>`).join('')}</select></label>
+   <label>Day<select id="c-day"><option value="">All 14 days</option>${days.map(d=>`<option value="${d}"${S.cDay===d?' selected':''}>${dfull(d)}</option>`).join('')}</select></label>
+   <label>Stage<select id="c-stage"><option value="">Any stage</option><option value="OPEN"${S.cStage==='OPEN'?' selected':''}>Open (not closed)</option>${STAGES.map(s=>`<option value="${s}"${S.cStage===s?' selected':''}>${STAGE_LBL[s]}</option>`).join('')}</select></label>
+   <label style="grid-auto-flow:column;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--fg)"><input type="checkbox" id="c-stuck"${S.cStuck?' checked':''}> Stuck only</label></div></div>
+   <div class="tw"><table><thead>${caseHead(true)}</thead><tbody>${caseRows(list,true,7)}</tbody></table></div></div>`;
+}
+
+/* ---- the extra cards under a telecaller's detail panel ---- */
+function empExtras(e){
+  const A=S.role==='admin',m=curMonth(),tg=tEmp(e.code,m),ach=monthAmt([e],m),pz=pace(m),pr=progress(ach,tg,pz);
+  const cs=CASES.filter(c=>c.emp_code===e.code).sort((a,b)=>b.date.localeCompare(a.date)),rem=REMARKS.filter(r=>r.emp_code===e.code).sort((a,b)=>b.date.localeCompare(a.date));
+  const target=`<div class="card"><h3>Target for ${monthLbl(m)}</h3>${tg?`<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:center"><div><div class="muted">Target</div><b class="n" style="font-size:18px">${inrC(tg)}</b></div><div><div class="muted">Disbursed so far</div><b class="n" style="font-size:18px">${inrC(ach)}</b> <span class="muted">${pc(pr.pct)}</span></div><div><div class="muted">Still to go</div><b class="n" style="font-size:18px">${inrC(Math.max(0,tg-ach))}</b></div><div>${paceBar(ach,tg,pz)}<span class="pill ${pr.cls}" style="margin-top:6px">${pr.lbl}</span></div></div>`:`<p class="muted" style="margin:0">No target set for ${esc(e.name)} this month.${A?' Set it on the Targets tab.':''}</p>`}</div>`;
+  const cases=`<div class="card"><h3>Customers and cases, last 14 days · ${cs.length}</h3><div style="margin-bottom:10px"><b>Ask ${esc(e.name.split(' ')[0])} about</b>${followUps(cs).replace(/^/,'<div style="margin-top:4px">')+'</div>'}</div>
+   <div class="tw"><table><thead>${caseHead(false)}</thead><tbody>${caseRows(cs,false,6)}</tbody></table></div></div>`;
+  const remarks=A?`<div class="card"><div class="head" style="margin:0 0 6px"><h3>Remarks · ${rem.length}</h3><button class="btn" data-act="x-remgo" data-v="${e.code}">Give a remark</button></div>${rem.length?`<ul style="margin:0;padding-left:18px">${rem.slice(0,8).map(r=>`<li><span class="n">${dfull(r.date)}</span>: <b>${esc(r.category)}</b>${r.note?' · '+esc(r.note):''} <span class="muted">(${esc(r.given_by)})</span></li>`).join('')}</ul>`:'<p class="muted" style="margin:0">No remarks.</p>'}</div>`:'';
+  return target+cases+remarks;
+}
+
+/* ---- employee directory (admin only) ---- */
+const dirComplete=r=>{const f=DF.filter(x=>String(r[x[0]]==null?'':r[x[0]]).trim()!=='').length+(r.join_date?1:0);return f/(DF.length+1)};
+const normName=s=>String(s||'').toLowerCase().replace(/[^a-z]/g,'');
+function checkDir(d){
+  const ph=v=>{const x=String(v||'').replace(/\D/g,'').replace(/^(91)?0?(?=\d{10}$)/,'');return !v||/^[6-9]\d{9}$/.test(x)};
+  if(!String(d.name||'').trim())return'Enter the name.';
+  if(d.dob&&(d.dob>=ymd(TODAY)||d.dob<'1940-01-01'))return'Date of birth looks wrong.';
+  if(!ph(d.mobile))return'Personal mobile must be a 10-digit Indian number.';
+  if(!ph(d.emergency_phone))return'Emergency contact number must be a 10-digit Indian number.';
+  if(d.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email))return'Personal email does not look right.';
+  if(d.pan&&!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(String(d.pan).toUpperCase().replace(/\s/g,'')))return'PAN must look like ABCDE1234F.';
+  if(d.aadhaar&&!/^[2-9]\d{11}$/.test(String(d.aadhaar).replace(/\D/g,'')))return'Aadhaar must be 12 digits.';
+  if(d.account_no&&!/^\d{6,20}$/.test(String(d.account_no).replace(/\D/g,'')))return'Account number must be 6 to 20 digits.';
+  if(d.ifsc&&!/^[A-Z]{4}0[A-Z0-9]{6}$/.test(String(d.ifsc).toUpperCase().replace(/\s/g,'')))return'IFSC must look like HDFC0001234.';
+  if(d.salary!==''&&d.salary!=null&&(!isFinite(num(d.salary))||num(d.salary)<0))return'Salary looks wrong.';
+  if(d.exit_date&&d.join_date&&d.exit_date<d.join_date)return'Exit date cannot be before the joining date.';
+  return'';
+}
+function dirRows(){
+  const q=S.dirQ.trim().toLowerCase();
+  return DIR.filter(r=>(!S.dirStatus||r.status===S.dirStatus)&&(!S.dirTeam||r.team_id===S.dirTeam)&&(!q||[r.name,r.emp_code,r.mobile,r.designation,r.leader_name,r.full_name].some(x=>String(x||'').toLowerCase().includes(q))))
+   .sort((a,b)=>(a.role===b.role?0:a.role==='TL'?-1:1)||String(a.name).localeCompare(String(b.name)));
+}
+function dirListHtml(){
+  const rows=dirRows();
+  return`<div class="tw"><table><thead><tr><th>Emp ID</th><th>Name</th><th>Designation</th><th>Team · reporting to</th><th>Mobile</th><th>Joined</th><th>Status</th><th>Exit date</th><th${T('How much of the profile is filled in.')}>Profile</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr class="clk ${r.emp_code===S.dirSel?'sel':''}" data-act="x-dpick" data-v="${esc(r.emp_code)}"><td class="n">${esc(r.emp_code)}</td><td><b>${esc(r.name)}</b></td><td>${esc(r.designation||(r.role==='TL'?'Team leader':'Telecaller'))}</td><td>${esc(r.team_name||r.team_id)}${r.leader_name?' <span class="muted">· '+esc(r.leader_name)+'</span>':r.role==='TL'?' <span class="muted">· leads the team</span>':''}</td><td class="n">${esc(r.mobile)||'<span class="muted">—</span>'}</td><td class="n">${dfull(r.join_date)||'—'}</td><td><span class="pill ${r.status==='ACTIVE'?'p':r.status==='LEFT'?'a':'l'}">${STATUS_LBL[r.status]||esc(r.status)}</span></td><td class="n">${dfull(r.exit_date)||''}</td><td style="min-width:90px">${bar(dirComplete(r),1,dirComplete(r)>=.9?'var(--up)':dirComplete(r)>=.5?'var(--accent)':'var(--down)')}</td></tr>`).join('')||'<tr><td colspan="9" class="muted">Nobody matches.</td></tr>'}</tbody></table></div>`;
+}
+function dirProfile(r){
+  const sens=(v,k)=>v?(S.reveal?esc(v):mask(v,k)):'',kv=(l,v)=>`<div><small>${l}</small><span>${v===''||v==null?'<span class="muted">—</span>':v}</span></div>`;
+  const miss=DF.filter(f=>String(r[f[0]]==null?'':r[f[0]]).trim()==='').map(f=>f[1].replace(/ \(.*\)/,''));
+  const mis=r.account_holder&&r.full_name&&normName(r.account_holder)!==normName(r.full_name);
+  const sec=n=>`<h3 style="margin:14px 0 8px">${n}</h3>`;
+  return`<div class="card" id="dirprofile"><div class="head"><div><h2 style="font-size:17px">${esc(r.name)} <span class="muted n" style="font-size:12px">${esc(r.emp_code)}</span></h2><p>${esc(r.designation||(r.role==='TL'?'Team leader':'Telecaller'))} · ${esc(r.team_name||r.team_id)} · <span class="pill ${r.status==='ACTIVE'?'p':r.status==='LEFT'?'a':'l'}">${STATUS_LBL[r.status]||esc(r.status)}</span></p></div>
+   <div class="form"><button class="btn" data-act="x-dreveal">${S.reveal?'Hide':'Show'} PAN, Aadhaar, account and salary</button><button class="btn pri" data-act="x-dedit">Edit</button><button class="btn" data-act="x-dclose">Close</button></div></div>
+  ${mis?'<div class="warn">The account holder name is different from the full name. The bank account must be in the same name as the PAN.</div>':''}
+  ${sec('Personal')}<div class="kv">${kv('Full name (as per Aadhaar / PAN)',esc(r.full_name))}${kv('Date of birth',dfull(r.dob))}${kv('Gender',esc(r.gender))}${kv('Marital status',esc(r.marital_status))}${kv('Blood group',esc(r.blood_group))}</div>
+  ${sec('Family and emergency')}<div class="kv">${kv('Father’s name',esc(r.father_name))}${kv('Mother’s name',esc(r.mother_name))}${kv('Emergency contact',esc(r.emergency_name))}${kv('Emergency number',esc(r.emergency_phone))}</div>
+  ${sec('Contact')}<div class="kv">${kv('Personal mobile',esc(r.mobile))}${kv('Personal email',esc(r.email))}${kv('Permanent address',esc(r.address))}</div>
+  ${sec('Identity')}<div class="kv">${kv('PAN',sens(r.pan,4))}${kv('Aadhaar',sens(r.aadhaar,4))}</div>
+  ${sec('Bank')}<div class="kv">${kv('Bank',esc(r.bank_name))}${kv('Account holder',esc(r.account_holder))}${kv('Account number',sens(r.account_no,4))}${kv('IFSC',esc(r.ifsc))}${kv('Branch',esc(r.bank_branch))}</div>
+  ${sec('Job')}<div class="kv">${kv('Employee ID',esc(r.emp_code))}${kv('Role',r.role==='TL'?'Team leader':'Telecaller')}${kv('Designation',esc(r.designation))}${kv('Team',esc(r.team_name||r.team_id))}${kv('Reporting manager',esc(r.leader_name||(r.role==='TL'?'—':'')))}${kv('Date of joining',dfull(r.join_date))}${kv('Employment status',STATUS_LBL[r.status]||esc(r.status))}${kv('Exit date',dfull(r.exit_date))}${kv('Monthly salary',r.salary===''||r.salary==null?'':(S.reveal?inr(r.salary):'₹ ••••••'))}</div>
+  ${miss.length?`<p class="note" style="margin-top:12px"><b>Still missing:</b> ${esc(miss.join(', '))}.</p>`:''}${r.updated_on?`<p class="note">Last saved ${esc(r.updated_on)}${r.updated_by?' by '+esc(r.updated_by):''}.</p>`:''}</div>`;
+}
+function dirForm(r){
+  const d=S.dd,secs={};DF.forEach(f=>(secs[f[3]]=secs[f[3]]||[]).push(f));
+  const inp=f=>{const [k,l,t,s,o]=f,v=d[k]==null?'':d[k];
+    if(t==='sel')return`<label>${l}<select id="f-${k}"><option value=""></option>${o.map(x=>`<option${x===v?' selected':''}>${x}</option>`).join('')}</select></label>`;
+    return`<label${k==='address'?' class="wide"':''}>${l}<input id="f-${k}" type="${t==='date'?'date':'text'}" value="${esc(v)}"${t==='tel'?' inputmode="tel"':''}${k==='pan'||k==='ifsc'?' style="text-transform:uppercase"':''} autocomplete="off"></label>`};
+  const dis=S.busy?' disabled':'',teamOpts=TEAMS.map(t=>`<option value="${t.id}"${d.team===t.id?' selected':''}>${esc(t.n)}${t.l?' ('+esc(t.l)+')':''}</option>`).join('');
+  const job=`<label>Employee ID<input value="${esc(r.emp_code)}" disabled></label><label>Display name<input id="f-name" value="${esc(d.name)}" maxlength="80" autocomplete="off"></label><label>Date of joining<input id="f-join_date" type="date" value="${esc(d.join_date)}"></label>
+   <label>Employment status<select id="f-status">${STATUSES.map(s=>`<option value="${s}"${d.status===s?' selected':''}>${STATUS_LBL[s]}</option>`).join('')}</select></label>
+   <label${T('Filled with today if you set the status to Left and leave this empty.')}>Exit date<input id="f-exit_date" type="date" value="${esc(d.exit_date)}"></label>
+   ${r.role==='TL'?`<label>Role<input value="Team leader" disabled></label>`:`<label${T('Moving someone to another team also moves their past numbers to that team.')}>Team (reporting manager follows the team)<select id="f-team">${teamOpts}</select></label>`}`;
+  return`<div class="card" id="dirprofile"><div class="head"><div><h2 style="font-size:17px">Edit ${esc(r.name)} <span class="muted n" style="font-size:12px">${esc(r.emp_code)}</span></h2><p>Leave anything you do not have empty. PAN, Aadhaar, IFSC and mobile numbers are checked when you save.</p></div></div>${msgBox()}
+   ${Object.keys(secs).map(n=>`<h3 style="margin:12px 0 8px">${n}</h3><div class="fgrid">${n==='Job'?job:''}${secs[n].map(inp).join('')}</div>`).join('')}
+   <div class="form" style="margin-top:14px"><button class="btn pri" data-act="x-dsave"${dis}>Save details</button><button class="btn" data-act="x-dcancel">Cancel</button></div></div>`;
+}
+function vDirectory(){
+  if(!DEMO&&!DIRLOADED)return`<div class="head"><div><h2>Employee directory</h2></div></div><div class="card"><p class="note">${DIRBUSY?'Loading the directory…':esc(S.dirErr||'Loading…')}</p>${!DIRBUSY&&S.dirErr?'<button class="btn pri" data-act="x-dretry">Try again</button>':''}</div>`;
+  const sel=S.dirSel&&DIR.find(r=>r.emp_code===S.dirSel),dis=S.busy?' disabled':'';
+  const n=s=>DIR.filter(r=>r.status===s).length,pay=DIR.filter(r=>r.status!=='LEFT').reduce((s,r)=>s+(+r.salary||0),0);
+  const nums=ALLROWS.map(e=>{const m=String(e.emp_code).match(/(\d+)$/);return m?+m[1]:0}),next='EMP'+String(1+Math.max(0,...nums)).padStart(3,'0');
+  return`<div class="head"><div><h2>Employee directory</h2><p>Admin only. Personal, job and bank details of everyone. Team leaders cannot see this page. Opening and saving here is logged.</p></div></div>${sel||!S.dirEdit?msgBox():''}
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))"><div class="card kpi sm"><h3>Employees</h3><div class="v">${DIR.length}</div><div class="s">${DIR.filter(r=>r.role==='TL').length} team leaders</div></div><div class="card kpi sm"><h3>Active</h3><div class="v">${n('ACTIVE')}</div><div class="s">${n('PROBATION')} on probation</div></div><div class="card kpi sm"><h3>Notice period</h3><div class="v">${n('NOTICE')}</div><div class="s">${n('LEFT')} have left</div></div><div class="card kpi sm"><h3>Monthly payroll</h3><div class="v">${S.reveal?inrC(pay):'₹ ••••'}</div><div class="s">salaries of people still working</div></div></div>
+  ${sel?(S.dirEdit&&S.dd?dirForm(sel):dirProfile(sel)):''}
+  <div class="card"><div class="head" style="margin:0 0 8px"><h3>Everyone</h3><div class="form"><label>Search<input id="dir-q" value="${esc(S.dirQ)}" placeholder="name, ID, mobile…" autocomplete="off"></label>
+   <label>Status<select id="dir-st"><option value="">All</option>${STATUSES.map(s=>`<option value="${s}"${S.dirStatus===s?' selected':''}>${STATUS_LBL[s]}</option>`).join('')}</select></label>
+   <label>Team<select id="dir-tm"><option value="">All</option>${TEAMS.map(t=>`<option value="${t.id}"${S.dirTeam===t.id?' selected':''}>${esc(t.n)}</option>`).join('')}</select></label></div></div>
+   <div id="dirlist">${dirListHtml()}</div><p class="note" style="margin-top:8px">Click a person to see everything about them. Name, team, status and join date are the same details used across the rest of the app.</p></div>
+  <div class="card"><h3>Add an employee</h3><div class="form"><label>Employee ID<input id="de-code" value="${next}" size="9"></label><label>Name<input id="de-name" size="18" placeholder="Full name" autocomplete="off"></label><label>Team<select id="de-team">${TEAMS.map(t=>`<option value="${t.id}">${esc(t.n)}</option>`).join('')}</select></label><button class="btn pri" data-act="x-dadd"${dis}>Add and fill details</button></div><p class="note" style="margin-top:8px">Adds a telecaller. To add a new team leader, create the team on Staff and access.</p></div>`;
+}
+function startEdit(code){
+  const r=DIR.find(x=>x.emp_code===code);if(!r)return;S.dirSel=code;S.dirEdit=true;S.msg='';
+  S.dd={name:r.name,join_date:r.join_date||'',status:r.status||'ACTIVE',exit_date:r.exit_date||'',team:r.team_id};DF.forEach(f=>{S.dd[f[0]]=r[f[0]]==null?'':r[f[0]]});
+}
+async function loadDir(quiet){
+  DIRBUSY=true;S.dirErr='';if(!quiet)render();
+  try{const r=await api('directory');if(r.error){if(r.error==='auth'){signOut(r.message);return}throw new Error(r.message||r.error)}DIR=r.directory||[];DIRLOADED=true}
+  catch(err){S.dirErr='Could not load the directory: '+err.message}
+  DIRBUSY=false;render();
+}
+function onTab(v){
+  if(DEMO)return;
+  if(v!=='directory'){DIR=[];DIRLOADED=false;S.dirSel=null;S.dirEdit=false;S.dd=null;S.reveal=false}   // personal data is not kept in the browser once you leave the page
+  else if(!DIRLOADED&&!DIRBUSY)loadDir(true);
+}
+function normField(k,v){v=String(v==null?'':v).trim();
+  if(k==='pan'||k==='ifsc')return v.toUpperCase().replace(/\s/g,'');
+  if(k==='aadhaar'||k==='account_no')return v.replace(/\D/g,'');
+  if(k==='mobile'||k==='emergency_phone')return v.replace(/\D/g,'').replace(/^(91)?0?(?=\d{10}$)/,'');
+  if(k==='email')return v.toLowerCase();
+  if(k==='salary')return v===''?'':num(v);
+  return v}
+function saveDir(){
+  const r=DIR.find(x=>x.emp_code===S.dirSel),d=S.dd;if(!r||!d)return;
+  const err=checkDir(d);if(err){S.msg=err;render();return}
+  const fields={};DF.forEach(f=>{fields[f[0]]=normField(f[0],d[f[0]])});
+  const body={emp_code:r.emp_code,name:d.name.trim(),status:d.status,join_date:d.join_date,exit_date:d.status==='LEFT'?d.exit_date:'',fields};if(r.role!=='TL')body.team_id=d.team;
+  adminDo('dir_save',body,()=>{
+    DF.forEach(f=>{r[f[0]]=fields[f[0]]});r.name=body.name;r.status=d.status;r.join_date=d.join_date;r.exit_date=d.status==='LEFT'?(d.exit_date||ymd(TODAY)):'';r.updated_on=ymd(TODAY);r.updated_by='you';
+    const em=EMPS.find(e=>e.code===r.emp_code),row=ALLROWS.find(x=>String(x.emp_code)===r.emp_code);
+    if(row){row.name=r.name;row.status=r.status}
+    if(em){em.name=r.name;em.active=r.status!=='LEFT'}
+    if(body.team_id&&body.team_id!==r.team_id){const ti=TEAMS.findIndex(t=>t.id===body.team_id);r.team_id=body.team_id;r.team_name=TEAMS[ti].n;r.leader_name=TEAMS[ti].l;if(row){row.team_id=body.team_id;row.team_name=TEAMS[ti].n}if(em)em.team=ti}
+    S.dirEdit=false;S.dd=null;return r.name+'’s details are saved.'},
+   async()=>{await loadDir(true);S.dirEdit=false;S.dd=null});
+}
+
+/* ---- who is using the app ---- */
+const ago=ms=>{const m=Math.floor(ms/60000);return m<1?'just now':m<60?m+' min ago':m<1440?Math.floor(m/60)+' h ago':Math.floor(m/1440)+' days ago'};
+function vDevices(){
+  const now=DEMO||!LOADED?new Date(META.asof||Date.now()):new Date(new Date(META.asof).getTime()+(Date.now()-LOADED.getTime())),ms=s=>now-new Date(String(s).replace(' ','T')+':00+05:30');
+  const rows=DEVICES.map(d=>({d,age:ms(d.last_seen)})).sort((a,b)=>a.age-b.age);
+  const online=rows.filter(r=>r.age<=10*60000).length,inst=rows.filter(r=>/installed/i.test(r.d.mode)).length;
+  const seen=new Set(DEVICES.map(d=>normMail(d.email))),never=ACCESS.filter(a=>a.status==='ACTIVE'&&!seen.has(normMail(a.email)));
+  return`<div class="head"><div><h2>App users</h2><p>Who has signed in, from which phone or computer, and whether they use the installed app or a browser tab. Telecallers do not sign in, so this lists team leaders and admins.</p></div></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))"><div class="card kpi sm"><h3>Online now</h3><div class="v up">${online}</div><div class="s">seen in the last 10 minutes</div></div><div class="card kpi sm"><h3>Devices</h3><div class="v">${rows.length}</div><div class="s">${inst} installed app · ${rows.length-inst} browser</div></div><div class="card kpi sm"><h3>Never opened</h3><div class="v ${never.length?'dn':''}">${never.length}</div><div class="s">have access but never signed in</div></div></div>
+  <div class="card"><div class="tw"><table><thead><tr><th>Person</th><th>Role</th><th>Device</th><th>How they open it</th><th>Last seen</th><th>First seen</th><th class="r">Sign-ins</th></tr></thead><tbody>
+  ${rows.map(({d,age})=>`<tr><td><b>${esc(d.name||d.email)}</b><br><span class="muted">${esc(d.email)}</span></td><td>${d.role==='ADMIN'?'Admin':'Team leader'}</td><td>${esc(d.device)}</td><td><span class="pill ${/installed/i.test(d.mode)?'p':''}">${esc(d.mode)}</span></td><td>${age<=10*60000?'<span class="pill p">Online now</span>':esc(ago(age))}<br><span class="muted n">${esc(d.last_seen)}</span></td><td class="muted n">${esc(String(d.first_seen).slice(0,10))}</td><td class="r n">${d.sign_ins}</td></tr>`).join('')||'<tr><td colspan="7" class="muted">Nobody has signed in since this feature was added. It fills in as people open the app.</td></tr>'}</tbody></table></div>
+  ${never.length?`<p class="note" style="margin-top:10px"><b>Have access but never opened the app:</b> ${never.map(a=>esc(a.name||a.email)).join(', ')}.</p>`:''}
+  <p class="note" style="margin-top:8px">The phone model shows only when the phone shares it. “Installed app” means it was opened from the home screen icon.</p></div>`;
+}
+
+/* ---- events for the new screens (data-act values start with x-) ---- */
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act="tv-new"],[data-act="tv-off"],[data-act="tv-copy"]');if(!b||b.disabled)return;
+  const a=b.dataset.act;
+  if(a==='tv-copy'){const f=$('#tvlink');if(f){f.select();try{navigator.clipboard.writeText(f.value)}catch(x){}S.msg='Link copied. Open it on the TV’s browser.';render()}return}
+  if(DEMO){S.msg='The TV display works with the live server. In live mode this makes the link.';render();return}
+  S.busy=true;S.msg='';render();
+  api(a==='tv-new'?'tv_key_new':'tv_key_off').then(r=>{
+    if(r.error){if(r.error==='auth'){signOut(r.message);return}throw new Error(r.message||r.error)}
+    S.tvLink=r.key?new URL('tv.html?k='+encodeURIComponent(r.key),location.href).href:'';S.msg=r.message||'Done.';
+  }).catch(err=>{S.msg='Could not do that: '+err.message}).finally(()=>{S.busy=false;render()});
+});
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act^="x-"]');if(!b||b.disabled)return;
+  const a=b.dataset.act,v=b.dataset.v;
+  if(a==='x-tm'){S.tmonth=shiftMonth(S.tmonth||curMonth(),+v);S.msg=''}
+  else if(a==='x-tcopy'){const m=S.tmonth||curMonth(),p=shiftMonth(m,-1),dr=S.tdraft[m]=S.tdraft[m]||{};
+    scope().forEach(e=>{const k='EMP|'+e.code;if(!tEmp(e.code,m)&&dr[k]===undefined&&tEmp(e.code,p))dr[k]=amtTxt(tEmp(e.code,p))});
+    if(S.role==='admin')TEAMS.forEach(t=>{const k='TEAM|'+t.id;if(!tTeamSet(t.id,m)&&dr[k]===undefined&&tTeamSet(t.id,p))dr[k]=amtTxt(tTeamSet(t.id,p))});S.msg='Copied into the empty boxes. Check them, then press Save targets.'}
+  else if(a==='x-tsave'){saveTargets();return}
+  else if(a==='x-remadd'){
+    const emp=$('#rm-emp').value,cat=$('#rm-cat').value,date=$('#rm-date').value,note=$('#rm-note').value.trim();
+    if(!emp){S.msg='Choose the employee.'}else if(!cat){S.msg='Choose what happened.'}
+    else{adminDo('remark_add',{emp_code:emp,category:cat,note,date},()=>{REMARKS.unshift({remark_id:'R'+Date.now(),date:date||ymd(TODAY),emp_code:emp,category:cat,note,given_by:'You',created_at:stampNow()});return'Remark recorded for '+nameOf(emp)+'.'});return}
+  }
+  else if(a==='x-rmv'){
+    if(S.confirm==='rmk:'+v){S.confirm=null;adminDo('remark_void',{remark_id:v},()=>{REMARKS=REMARKS.filter(r=>r.remark_id!==v);return'Remark withdrawn.'});return}
+    S.confirm='rmk:'+v}
+  else if(a==='x-remgo'){S.rEmp=v;S.tab='remarks';S.msg=''}
+  else if(a==='x-cform'){S.addCase=!S.addCase;S.msg=''}
+  else if(a==='x-cadd'){
+    const emp=$('#ca-emp').value,cust=$('#ca-cust').value.trim(),bank=$('#ca-bank').value.trim(),prod='',amt=parseAmt($('#ca-amt').value),stage=$('#ca-stage').value;
+    if(!cust)S.msg='Enter the customer name.';else if(!bank)S.msg='Enter the bank.';else if(isNaN(amt)||amt<0)S.msg='The amount does not look right. Try 500000 or 5L.';
+    else{adminDo('case_add',{emp_code:emp,customer:cust,bank,product:prod,amount:amt==null?'':amt,stage},()=>{const mx=Math.max(0,...CASES.map(c=>+String(c.case_id).replace(/\D/g,'')||0));CASES.push({case_id:'C'+String(mx+1).padStart(5,'0'),date:ymd(TODAY),emp_code:emp,customer:cust,bank,product:prod,amount:amt||0,stage,stage_date:ymd(TODAY),updated_by:'You'});return'Case added for '+nameOf(emp)+'.'},async()=>{S.addCase=false});return}
+  }
+  else if(a==='x-cmove'){
+    const c=CASES.find(x=>x.case_id===v);if(!c)return;const sel=$('#cs-'+v),st=sel?sel.value:c.stage,note=$('#cn-'+v).value.trim();
+    const addNote=()=>{if(note)CNOTES.push({case_id:v,date:stampNow(),by:'You',note})};
+    if(st===c.stage&&!note)S.msg='Change the stage or write a note first.';
+    else if(st!==c.stage){adminDo('case_stage',{case_id:v,stage:st,note},()=>{c.stage=st;c.stage_date=ymd(TODAY);addNote();return'Case moved to '+STAGE_LBL[st]+'.'});return}
+    else{adminDo('case_note',{case_id:v,note},()=>{addNote();return'Note added.'});return}
+  }
+  else if(a==='x-copyq'){const t=S._q||'';try{navigator.clipboard.writeText(t);S.msg='Copied. Paste it into WhatsApp.'}catch(x){S.msg='Could not copy on this device.'}
+    if(S.sel){const e=EMPS.find(x=>x.code===S.sel);if(e)try{navigator.clipboard.writeText(CASES.filter(c=>c.emp_code===e.code&&isStuck(c)).map(askLine).join('\n'))}catch(x){}}}
+  else if(a==='x-dpick'){S.dirSel=S.dirSel===v&&!S.dirEdit?null:v;S.dirEdit=false;S.dd=null;S.reveal=false;S.msg='';render();const el=$('#dirprofile');if(el)el.scrollIntoView({block:'nearest'});return}
+  else if(a==='x-dclose'){S.dirSel=null;S.dirEdit=false;S.dd=null;S.reveal=false;S.msg=''}
+  else if(a==='x-dreveal'){S.reveal=!S.reveal}
+  else if(a==='x-dedit'){startEdit(S.dirSel)}
+  else if(a==='x-dcancel'){S.dirEdit=false;S.dd=null;S.msg=''}
+  else if(a==='x-dsave'){saveDir();return}
+  else if(a==='x-dretry'){loadDir();return}
+  else if(a==='x-sync'){adminDo('sync_backend',{},()=>'Demo mode: there is no backend sheet to read.');return}
+  else if(a==='x-dadd'){
+    const code=$('#de-code').value.trim().toUpperCase(),name=$('#de-name').value.trim(),tid=$('#de-team').value,ti=TEAMS.findIndex(t=>t.id===tid);
+    if(!name)S.msg='Enter a name first.';else if(ti<0)S.msg='Add a team first.';else if(!/^[A-Z0-9_-]{2,20}$/.test(code))S.msg='Employee ID can only use letters, numbers, - and _ (2 to 20 characters).';else if(ALLROWS.some(e=>String(e.emp_code).toUpperCase()===code))S.msg='The employee ID '+code+' is already used.';
+    else{adminDo('staff_add',{emp_code:code,name,team_id:tid},()=>{EMPS.push(blank(code,name,ti));ALLROWS.push({emp_code:code,name,team_id:tid,role:'TELECALLER',status:'ACTIVE'});TEAMS[ti].size++;
+        const row={emp_code:code,name,team_id:tid,team_name:TEAMS[ti].n,leader_code:'',role:'TELECALLER',status:'ACTIVE',join_date:ymd(TODAY),exit_date:'',leader_name:TEAMS[ti].l,updated_on:'',updated_by:''};DF.forEach(f=>{row[f[0]]=''});DIR.push(row);startEdit(code);return name+' added. Fill in the details below.'},
+       async()=>{await loadDir(true);startEdit(code)});return}
+  }
+  else return;
+  render();
+});
+document.addEventListener('input',ev=>{
+  const t=ev.target;if(!t||!t.id&&!(t.classList&&t.classList.contains('tin')))return;
+  if(t.classList.contains('tin')){const m=S.tmonth||curMonth();(S.tdraft[m]=S.tdraft[m]||{})[t.dataset.k]=t.value;return}
+  if(t.id.startsWith('f-')&&S.dd){S.dd[t.id.slice(2)]=t.value;return}
+  if(t.id==='dir-q'){S.dirQ=t.value;const el=$('#dirlist');if(el)el.innerHTML=dirListHtml()}
+});
+document.addEventListener('change',ev=>{
+  const t=ev.target,id=t&&t.id;if(!id)return;
+  if(id.startsWith('f-')&&S.dd){S.dd[id.slice(2)]=t.value;return}
+  const m={'dir-st':()=>{S.dirStatus=t.value},'dir-tm':()=>{S.dirTeam=t.value},'rm-fcat':()=>{S.rfcat=t.value},'rm-femp':()=>{S.rfemp=t.value},'c-emp':()=>{S.cEmp=t.value},'c-day':()=>{S.cDay=t.value},'c-stage':()=>{S.cStage=t.value},'c-stuck':()=>{S.cStuck=t.checked}};
+  if(m[id]){m[id]();render()}
+});
+
+const VIEWS2={setup:()=>vSetupX(),targets:vTargets,remarks:vRemarks,cases:vCases,directory:vDirectory,devices:vDevices};
+
+const vSetup0=vSetup;
+function syncCard(){
+  const dis=S.busy?' disabled':'',y=SYNC;
+  if(!DEMO&&!SYNC_ON)return`<div class="card"><h3>Backend sheet</h3><p class="note" style="margin:0">Not connected yet. In your Apps Script project, open the BackendSync file and run <b>createBackendTemplate</b>. It makes the sheet your backend team types in and connects it. The steps are in the README.</p></div>`;
+  const body=!y?'<p class="note" style="margin:0">Waiting for the first sync. It runs every 10 minutes, or press Sync now.</p>':y.error?`<p class="warn" style="margin:0">The last attempt failed: ${esc(y.error)}</p>`:`<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))"><div><div class="muted">Last sync</div><b class="n">${esc(y.at)}</b></div><div><div class="muted">Rows read</div><b class="n">${y.rows}</b></div><div><div class="muted">Cases imported</div><b class="n">${y.imported}</b> <span class="muted">${y.people} people</span></div><div><div class="muted">Could not match</div><b class="n ${y.unmatched?'dn':''}">${y.unmatched}</b></div></div>
+   ${y.issue_count?`<div class="tw" style="margin-top:10px"><table><thead><tr><th>Problem</th><th>Name in sheet</th><th>Customer</th><th>What to do</th></tr></thead><tbody>${(y.issues||[]).map(i=>`<tr><td>${esc(i.type)}</td><td>${esc(i.tc)}</td><td>${esc(i.customer)}</td><td>${esc(i.detail)}</td></tr>`).join('')}</tbody></table></div><p class="note" style="margin-top:6px">${y.issue_count} in total. The full list is in the Import_Issues tab of your sheet. A name that does not match can be fixed in the Name_Map tab.</p>`:'<p class="note" style="margin-top:8px">Every row matched a telecaller.</p>'}`;
+  return`<div class="card"><div class="head" style="margin:0 0 8px"><h3>Backend sheet</h3><button class="btn" data-act="x-sync"${dis}${T('Read the backend team’s sheet right now instead of waiting for the 10-minute timer.')}>Sync now</button></div>${body}</div>`;
+}
+const vSetupX=()=>vSetup0()+syncCard();
+const empDetail0=empDetail;
+function empDetailX(e){return empDetail0(e)+empExtras(e)}
+const VIEWS={live:vLive,day:vDay,teams:vTeams,rank:vRank,people:vPeople,pipeline:vPipeline,calls:vCalls,logins:vLogins,trends:vTrends,attendance:vAttendance,setup:vSetup,help:vHelp,...VIEWS2};
+const TABN={live:'Live',day:'Day view',teams:'Teams',rank:'All teams',people:'Telecallers',pipeline:'Pipeline',calls:'Calls report',logins:'Logins',attendance:'Attendance',trends:'Trends',setup:'Staff and access',help:'Help',targets:'Targets',cases:'Cases',remarks:'Remarks',directory:'Employee directory',devices:'App users'};
+const TABTIP={live:'Today, right now.',day:'Pick any date and see that day.',teams:'All teams compared.',rank:'How every team is doing and your position.',people:'Every telecaller with cases and rupees.',pipeline:'Case stages and disbursal.',calls:'Calls and talk time, team by team.',logins:'Cases logged in, team by team.',trends:'Lines over time with a forecast.',attendance:'Who is present, absent or on leave.',setup:'Who can sign in, teams and staff.',help:'The complete guide.',targets:'Monthly rupee targets for every person and team.',cases:'Customer cases from the last 14 days: bank, stage and what is stuck.',remarks:'Behaviour remarks on employees. Admin only.',directory:'Everyone’s personal, job and bank details. Admin only.',devices:'Who signs in, on which device and app. Admin only.'};
+/* ============ navigation: groups, icon rail, phone drawer ============ */
+const NAVG={
+ admin:[{k:'ov',g:'Overview',items:['live','day','teams']},{k:'pe',g:'People',items:['people','attendance','logins','calls','cases','targets']},{k:'mo',g:'Money',items:['pipeline','trends']},{k:'ad',g:'Admin',items:['remarks','directory','setup','devices']},{k:'hp',g:'Help',items:['help']}],
+ tl:[{k:'ov',g:'Overview',items:['live','day','rank']},{k:'my',g:'My team',items:['people','attendance','logins','calls','cases','targets','pipeline','trends']},{k:'hp',g:'Help',items:['help']}]
+};
+const ICON={
+live:'<polyline points="2 12 6 12 9 5 13 19 16 12 22 12"/>',
+day:'<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 10h18M8 2.5v4M16 2.5v4"/>',
+teams:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.3 3.3-5 6.5-5s5.9 1.7 6.5 5"/><circle cx="17.2" cy="8.6" r="2.6"/><path d="M16.6 14.8c2.6.3 4.4 1.9 5 4.7"/>',
+rank:'<path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 6H4.5v1.5A3.5 3.5 0 0 0 8 11M16 6h3.5v1.5A3.5 3.5 0 0 1 16 11"/><path d="M12 13v3.5M8.5 21h7l-.6-4.5h-5.8z"/>',
+people:'<circle cx="12" cy="8" r="4"/><path d="M4.5 21c.9-4.1 4-6.2 7.5-6.2s6.6 2.1 7.5 6.2"/>',
+attendance:'<rect x="4.5" y="3.5" width="15" height="18" rx="2.5"/><path d="M9 3.5V2.8h6v.7M8.8 13l2.2 2.2 4.3-4.4"/>',
+logins:'<path d="M14.5 4h3.5a2.5 2.5 0 0 1 2.5 2.5v11a2.5 2.5 0 0 1-2.5 2.5h-3.5"/><path d="M10 8l4 4-4 4M14 12H3"/>',
+calls:'<path d="M21.5 16.6v3a2 2 0 0 1-2.2 2 19.6 19.6 0 0 1-8.5-3 19.3 19.3 0 0 1-6-6 19.6 19.6 0 0 1-3-8.6A2 2 0 0 1 3.8 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.9.7 2.8a2 2 0 0 1-.5 2.1L7.9 9.8a16 16 0 0 0 6.3 6.3l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
+cases:'<rect x="3" y="7" width="18" height="13.5" rx="2.5"/><path d="M8.5 7V5.2A1.7 1.7 0 0 1 10.2 3.5h3.6a1.7 1.7 0 0 1 1.7 1.7V7M3 12.5h18"/>',
+targets:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+pipeline:'<path d="M3 4.5h18l-7 8.6V19l-4 2v-7.9z"/>',
+trends:'<polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>',
+remarks:'<path d="M21 14.5a2.5 2.5 0 0 1-2.5 2.5H8l-4.5 3.5V6.5A2.5 2.5 0 0 1 6 4h12.5A2.5 2.5 0 0 1 21 6.5z"/><path d="M8 9h8M8 12.5h5"/>',
+directory:'<path d="M5 3.5h12.5a1.5 1.5 0 0 1 1.5 1.5v14.5a1.5 1.5 0 0 1-1.5 1.5H5z"/><path d="M5 17.5A2.5 2.5 0 0 1 7.5 15H19M9 8.5h6"/>',
+setup:'<path d="M4 6h10M18 6h2M4 18h2M10 18h10"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="18" r="2"/>',
+devices:'<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+help:'<circle cx="12" cy="12" r="9"/><path d="M9.3 9.4a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.9v.3"/><circle cx="12" cy="17.2" r=".6"/>'
+};
+const navGroups=()=>NAVG[S.role==='admin'?'admin':'tl'];
+const groupOf=t=>(navGroups().find(g=>g.items.includes(t))||{}).k;
+/* only one group open at a time: opening one closes the rest */
+const accordion=(k,open)=>{const o={};navGroups().forEach(g=>{o[g.k]=false});if(open)o[k]=true;return o};
+function initRail(){let p=null;try{p=localStorage.getItem('fp-rail')}catch(x){}if(p==='1')return true;if(p==='0')return false;return innerWidth>=720&&innerWidth<1100}
+const navOpenOf=g=>(g.k in S.navOpen)?!!S.navOpen[g.k]:g.items.includes(S.tab);
+function navHtml(){
+  return navGroups().map(g=>{
+    const open=navOpenOf(g);
+    return`<div class="ng${open?' open':''}" data-g="${g.k}"><button class="ng-h" data-act="ngrp" data-v="${g.k}" aria-expanded="${open}"><span class="lbl">${g.g}</span><span class="chev" aria-hidden="true">▸</span></button><div class="ng-items-wrap${open?'':' closed'}"><div class="ng-items">${g.items.map(t=>`<button class="nv${S.tab===t?' on':''}" data-act="tab" data-v="${t}" aria-current="${S.tab===t?'page':'false'}"${T(TABTIP[t])}><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24">${ICON[t]}</svg></span><span class="lbl">${TABN[t]}</span></button>`).join('')}</div></div></div>`;
+  }).join('');
+}
+/* Updates the nav in place (so CSS transitions can run) and rebuilds it only when the role changes */
+function navRender(){
+  const nv=$('#nav');
+  if(!nv)return;
+  if(!nv.children.length||nv.dataset.role!==S.role){nv.innerHTML=navHtml();nv.dataset.role=S.role;return}
+  navGroups().forEach(g=>{
+    const box=nv.querySelector('.ng[data-g="'+g.k+'"]');if(!box)return;
+    const open=navOpenOf(g);
+    box.classList.toggle('open',open);
+    box.querySelector('.ng-h').setAttribute('aria-expanded',String(open));
+    box.querySelector('.ng-items-wrap').classList.toggle('closed',!open);
+    box.querySelectorAll('.nv').forEach(b=>{const on=S.tab===b.dataset.v;b.classList.toggle('on',on);b.setAttribute('aria-current',on?'page':'false')});
+  });
+}
+/* phones show the numbers that matter most; the laptop shows every column.
+   Columns named here are hidden on phones only. Empty headers and the day columns on Logins are hidden too. */
+const PHONE_OFF=/^(Connected|Connect|Connect rate|Average call|Calls per present day|Approved|Rejected|Pending|Leader|Avg per case|Disb\. of cases|14 days|Change|Projected|Month target|% of target|Attendance|Last note)$/;
+const DAY_COL=/^\d{1,2} [A-Z][a-z]{2}$/;
+/* phones: every table becomes a stack of label/value cards; the first cell is the card title */
+function labelTables(root){
+  root.querySelectorAll('table').forEach(t=>{
+    t.classList.add('rt');
+    const heads=[...t.querySelectorAll('thead th')].map(h=>h.textContent.replace(/[▲▼]/g,'').replace(/\s+/g,' ').trim());
+    const off=heads.map(h=>!h||PHONE_OFF.test(h)||DAY_COL.test(h));
+    t.querySelectorAll('tbody tr').forEach(tr=>{
+      let i=0;
+      [...tr.children].forEach(td=>{
+        if(td.colSpan>1){td.classList.add('nl');return}
+        if(i===0)td.classList.add('nl');
+        else if(heads[i])td.dataset.l=heads[i];
+        if(off[i])td.classList.add('m-hide');
+        i++;
+      });
+    });
+  });
+}
+/* Live page, team leader: the plain-language summary */
+function summaryCard(a,sc,n,tL,tC,f){
+  const expect=Math.round(tL*f),absent=n-a.pres,early=f<.02;
+  const low=Math.min(sc.rL,sc.rC),tone=early?'':low>=1?'good':low>=.8?'warn':'bad';
+  const verdict={good:'Good day so far',warn:'A little behind',bad:'Needs attention','':'The shift has just started'}[tone];
+  const word=x=>x>=1?'on pace':x>=.8?'a little behind pace':'behind pace';
+  return`<section class="card sum ${tone?'t-'+tone:''}" aria-label="Summary for your team"><div class="sum-top"><div><div class="muted">How is my team today?</div><b class="sum-verdict">${verdict}</b></div><div class="sum-big"><span class="n">${a.logins}</span><small>cases logged${expect?' · about '+expect+' expected by now':''}</small></div></div>
+  <ul class="sum-l">
+   <li>${a.pres} of ${n} telecallers are in today${absent>0?', and '+absent+' are absent or on leave':''}.</li>
+   <li>${early?'Cases are too early to compare with the day’s pace.':'Cases are '+pc(sc.rL)+' of target for this time of day, '+word(sc.rL)+'.'}</li>
+   <li>${early?'Calls are too early to compare.':'Calls are '+pc(sc.rC)+' of target for this time of day, '+word(sc.rC)+'. '+fmt(a.calls)+' made, connect rate '+(a.calls?pc(a.conn/a.calls,1):'–')+'.'}</li>
+   <li>${a.disb} disbursed today, ${inrC(a.amt)}.</li></ul></section>`;
+}
+const tabsFor=()=>navGroups().flatMap(g=>g.items);
+
+/* ============ render + events ============ */
+function renderTop(){
+  const stamp=DEMO?'Demo data · as of '+hhmm(S.min):(S.err&&!LOADED?'Offline':'Updated '+hhmm(istNow(LOADED||new Date()).min));
+  const u=SESSION&&SESSION.user,tm=TEAMS[S.tl]||{};
+  const who=S.locked?`<span class="pill who"${T(u?'Signed in as '+u.email:'')}>${S.role==='admin'?'Admin':esc(tm.l||'Team leader')+' · '+esc(tm.n||'')}</span>`:
+   '<div class="seg" role="group" aria-label="View as"'+T('Demo only: switch between what an admin sees and what a team leader sees.')+'><button data-act="role" data-v="admin" aria-pressed="'+(S.role==='admin')+'">Admin</button><button data-act="role" data-v="tl" aria-pressed="'+(S.role==='tl')+'">Team leader</button></div>'+
+   (S.role==='tl'?'<select id="tlteam" aria-label="Team">'+TEAMS.map((t,i)=>'<option value="'+i+'" '+(S.tl===i?'selected':'')+'>'+esc(t.l||t.n)+'</option>').join('')+'</select>':'');
+  $('#pagetitle').textContent=TABN[S.tab]||'';
+  const st=$('#stamp');st.className='live'+(S.err?' off':'');st.innerHTML='<i></i>'+esc(stamp);st.setAttribute('data-tip',S.err||'The app is connected and showing the latest data.');
+  const acts=`<button class="btn" data-act="sync"${S.loading?' disabled':''}${T(DEMO?'Demo: adds a few logins and moves the clock 5 minutes so you can see a live update.':'Reload the latest data from the Google Sheet and the app database now.')}>${DEMO?'Simulate 5-min sync':S.loading?'Refreshing…':'Refresh'}</button>${who}`+
+    (DEMO?'':`<button class="btn" data-act="signout"${T('Sign out of this device.')}>Sign out</button>`)+
+    `<button class="btn" data-act="theme" aria-label="Toggle theme"${T('Switch between light and dark.')}>Theme</button>`;
+  $('#bar1').innerHTML=acts;$('#sideAct').innerHTML=acts.replace('id="tlteam"','id="tlteam2"')+'<p class="side-note">'+esc(stamp)+'</p>';
+  $('#branch').textContent=(META.branch||CFG.BRANCH)+' · '+(DEMO?'demo data':'live');
+  navRender();
+}
+function emptyState(){
+  return S.role==='admin'
+   ?`<div class="card"><h3>Nothing to show yet</h3><p>There are no telecallers in the sheet yet.</p><p class="note">Go to <b>Staff and access</b> to add a team and telecallers, or fill the Employees tab in your Google Sheet. Then open <b>Help</b> for a tour.</p></div>`
+   :`<div class="card"><h3>Nothing to show yet</h3><p>Your team has no telecallers yet. Ask your admin to add them.</p></div>`;
+}
+function render(){
+  hideTip();
+  document.body.classList.remove('nolog');
+  if(!tabsFor().includes(S.tab))S.tab=tabsFor()[0]||'live';
+  renderTop();
+  const app=$('#app');if(app){app.classList.toggle('rail',!!S.rail);app.classList.toggle('drawer',!!S.drawer)}
+  const tg=$('#sideToggle');if(tg){tg.textContent=S.rail?'›':'‹';tg.setAttribute('aria-label',S.rail?'Open the menu':'Shrink the menu to icons')}
+  const needs=!['setup','help','directory','devices','remarks'].includes(S.tab);
+  const empty=needs&&!scope().length&&!(S.tab==='rank'&&TEAMS.length);
+  let html;
+  try{html=empty?emptyState():VIEWS[S.tab]()}catch(err){console.error(err);html='<div class="card"><h3>Something went wrong showing this page</h3><p class="note">'+esc(err.message)+'</p><p class="note">Try another tab or press Refresh.</p></div>'}
+  const vw=$('#view');vw.innerHTML=(S.err?'<div class="lock" role="status">'+esc(S.err)+'</div>':'')+html;
+  labelTables(vw);
+  vw.classList.remove('enter');if(S.anim){void vw.offsetWidth;vw.classList.add('enter');S.anim=false}
+}
+function moveDay(dir){
+  let i=S.day;
+  for(let k=0;k<8;k++){i+=dir;if(i<0){i=0;break}if(i>=maxRange()){i=maxRange()-1;break}if(dateOf(i).getDay()!==0)break}
+  S.day=Math.max(0,Math.min(i,maxRange()-1));
+}
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('[data-act]');if(!b||b.disabled)return;
+  const a=b.dataset.act,v=b.dataset.v;
+  if(a.startsWith('x-'))return;
+  if(a==='tab'){S.tab=v;S.msg='';S.confirm=null;S.drawer=false;S.anim=true;const gk=groupOf(v);if(gk)S.navOpen=accordion(gk,true);onTab(v)}
+  else if(a==='ngrp'){const cur=(v in S.navOpen)?!!S.navOpen[v]:navGroups().some(g=>g.k===v&&g.items.includes(S.tab));S.navOpen=accordion(v,!cur)}
+  else if(a==='menu'){S.drawer=!S.drawer}
+  else if(a==='drawer-close'){S.drawer=false}
+  else if(a==='rail'){S.rail=!S.rail;try{localStorage.setItem('fp-rail',S.rail?'1':'0')}catch(x){}}
+  else if(a==='role'){S.role=v;S.sel=null;S.range=1;S.anim=true;S.day=Math.min(S.day,maxRange()-1)}
+  else if(a==='range'){S.range=+v}
+  else if(a==='sort'){S.sort=S.sort.k===v?{k:v,d:-S.sort.d}:{k:v,d:v==='name'?1:-1}}
+  else if(a==='pick'){S.sel=S.sel===v?null:v}
+  else if(a==='close'){S.sel=null}
+  else if(a==='dayprev'){moveDay(1)}
+  else if(a==='daynext'){moveDay(-1)}
+  else if(a==='daytoday'){S.day=0}
+  else if(a==='signout'){signOut();return}
+  else if(a==='sync'){if(DEMO)simulate();else{refresh();return}}
+  else if(a==='theme'){const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.dataset.theme=dark?'light':'dark'}
+  else if(a==='add'){
+    const code=$('#n-code').value.trim().toUpperCase(),name=$('#n-name').value.trim(),ti=TEAMS.findIndex(t=>t.id===$('#n-team').value);
+    if(!name){S.msg='Enter a name first.'}
+    else if(ti<0){S.msg='Add a team first.'}
+    else if(!/^[A-Z0-9_-]{2,20}$/.test(code)){S.msg='Employee code can only use letters, numbers, - and _ (2 to 20 characters).'}
+    else if(ALLROWS.some(e=>String(e.emp_code).toUpperCase()===code)){S.msg='The employee code '+code+' is already used.'}
+    else{adminDo('staff_add',{emp_code:code,name,team_id:TEAMS[ti].id},()=>{EMPS.push(blank(code,name,ti));ALLROWS.push({emp_code:code,name,team_id:TEAMS[ti].id,role:'TELECALLER',status:'ACTIVE'});TEAMS[ti].size++;return name+' added to '+TEAMS[ti].n+"'s team."});return}
+  }
+  else if(a==='rm'){
+    if(S.confirm===v){const e=EMPS.find(x=>x.code===v);S.confirm=null;
+      if(e){adminDo('staff_remove',{emp_code:v},()=>{e.active=false;return e.name+' removed. Past numbers are kept.'});return}}
+    else S.confirm=v;
+  }
+  else if(a==='rmno'){S.confirm=null}
+  else if(a==='teamadd'){
+    const tn=$('#tm-name').value.trim(),ln=$('#tm-lead').value.trim();
+    if(!tn||!ln)S.msg='Enter both the team name and the leader’s name.';
+    else if(TEAMS.some(t=>t.n.toLowerCase()===tn.toLowerCase()))S.msg='A team called '+tn+' already exists.';
+    else{adminDo('team_add',{team_name:tn,leader_name:ln},()=>{const id='T'+(1+Math.max(0,...TEAMS.map(t=>+String(t.id).replace(/\D/g,'')||0)));TEAMS.push({id,n:tn,l:ln,size:0,c:'var(--c'+(TEAMS.length%5+1)+')'});ALLROWS.push({emp_code:'TL-'+id,name:ln,team_id:id,role:'TL',status:'ACTIVE'});return 'Team '+tn+' created. Now give '+ln+'’s Google account access.'});return}
+  }
+  else if(a==='accset'){
+    const email=$('#a-email').value.trim().toLowerCase(),name=$('#a-name').value.trim(),role=$('#a-role').value,team=$('#a-team').value;
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))S.msg='That does not look like an email address.';
+    else if(role==='TL'&&!team)S.msg='Add a team first, then choose it for this team leader.';
+    else{adminDo('access_set',{email,name,role,team_id:role==='TL'?team:''},()=>{const ex=ACCESS.find(x=>x.email.toLowerCase()===email);const o={email,name,role,team_id:role==='TL'?team:'',status:'ACTIVE'};if(ex)Object.assign(ex,o);else ACCESS.push(o);return email+' can now sign in.'});return}
+  }
+  else if(a==='accrev'){
+    if(S.confirm==='acc:'+v){S.confirm=null;adminDo('access_revoke',{email:v},()=>{ACCESS.filter(x=>x.email===v).forEach(x=>{x.status='REVOKED'});return v+' no longer has access.'});return}
+    else S.confirm='acc:'+v;
+  }
+  render();
+});
+document.addEventListener('change',ev=>{
+  const id=ev.target.id;if(!id)return;
+  if(id==='a-role'){const t=$('#a-team');if(t)t.disabled=ev.target.value==='ADMIN';return}
+  if(id==='tlteam'||id==='tlteam2'){S.tl=+ev.target.value;S.sel=null}
+  else if(id==='d-pick'){const s=ev.target.value;if(!s)return;const i=dayIdxOf(s);S.day=Math.max(0,Math.min(i,maxRange()-1))}
+  else if(id==='t-metric')S.trend.metric=ev.target.value;
+  else if(id==='t-level')S.trend.level=ev.target.value;
+  else if(id==='t-gran'){S.trend.gran=ev.target.value;if(S.trend.gran==='month'&&S.range<60)S.range=60}
+  else if(id==='t-dir')S.trend.dir=ev.target.value;
+  else if(id==='t-rebase')S.trend.rebase=ev.target.checked;
+  else return;
+  render();
+});
+async function boot(){
+  $('#view').innerHTML='<div class="card"><p class="note">Loading data…</p></div>';
+  if(!DEMO){SESSION=SESSION||readSession();if(!SESSION){showLogin();return}}
+  const ok=await load();
+  if(ok==='auth')return;
+  if(!ok){$('#bar1').innerHTML='';$('#nav').innerHTML='';$('#sideAct').innerHTML='';$('#pagetitle').textContent='';$('#stamp').textContent='';document.body.classList.add('nolog');$('#view').innerHTML='<div class="card"><h3>Could not load data</h3><p>'+esc(S.err)+'</p><p class="note">'+(DEMO?'Check DATA_URL in config.js.':'Check your internet connection. If this keeps happening, tell your admin.')+'</p><p style="display:flex;gap:8px"><button class="btn pri" data-act="retry">Try again</button>'+(DEMO?'':'<button class="btn" data-act="signout">Sign out</button>')+'</p></div>';return}
+  render();
+  clearInterval(TIMER);if(!DEMO)TIMER=setInterval(refresh,CFG.REFRESH_MIN*60000);
+}
+document.addEventListener('click',ev=>{if(ev.target.closest('[data-act="retry"]'))boot()});
+boot();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+</script>
+</body></html>
